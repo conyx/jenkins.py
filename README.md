@@ -1,1 +1,1 @@
-This SDK enables development plugins for Jenkins in Python.
+This SDK enables plugin development for Jenkins in Python.
