@@ -1,4 +1,5 @@
 package org.jenkinsci.plugins.hello_world_python;
+
 import hudson.Launcher;
 import hudson.Extension;
 import hudson.util.FormValidation;
@@ -19,7 +20,10 @@ import java.io.File;
 import org.python.util.PythonInterpreter;
 import org.python.core.*;
 
-public class HelloWorldBuilder extends Builder {
+import org.jenkinsci.plugins.python_wrapper.expoint.*;
+import org.jenkinsci.plugins.python_wrapper.descriptor.*;
+
+public class HelloWorldBuilder extends BuilderPW {
 
     private final String name;
 
@@ -33,41 +37,16 @@ public class HelloWorldBuilder extends Builder {
     }
 
     @Override
-    public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
-        File class_folder = new File(HelloWorldBuilder.class.getProtectionDomain().getCodeSource().getLocation().getPath());
-        // TODO exctract package name to path
-        File delegate_script = new File(class_folder, "org");
-        delegate_script = new File(delegate_script, "jenkinsci");
-        delegate_script = new File(delegate_script, "plugins");
-        delegate_script = new File(delegate_script, "hello_world_python");
-        delegate_script = new File(delegate_script, "hello_world_builder.py");
-        PythonInterpreter interp = new PythonInterpreter();
-        interp.execfile(delegate_script.getPath());
-        interp.set("_HelloWorldBuilder_perform_this", this);
-        interp.set("_HelloWorldBuilder_perform_build", build);
-        interp.set("_HelloWorldBuilder_perform_launcher", launcher);
-        interp.set("_HelloWorldBuilder_perform_listener", listener);
-        PyObject obj = interp.eval("perform(_HelloWorldBuilder_perform_this, " +
-                                           "_HelloWorldBuilder_perform_build, " +
-                                           "_HelloWorldBuilder_perform_launcher, " +
-                                           "_HelloWorldBuilder_perform_listener)");
-        boolean result = ((PyInteger)obj).asInt() == 0 ? false : true;
-        return result;
-    }
-
-    @Override
     public DescriptorImpl getDescriptor() {
         return (DescriptorImpl)super.getDescriptor();
     }
 
-
     @Extension
-    public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
+    public static final class DescriptorImpl extends BuildStepDescriptorPW<Builder> {
 
         private boolean useFrench;
 
-        public FormValidation doCheckName(@QueryParameter String value)
-                throws IOException, ServletException {
+        public FormValidation doCheckName(@QueryParameter String value) throws IOException, ServletException {
             if (value.length() == 0)
                 return FormValidation.error("Please set a name");
             if (value.length() < 4)
@@ -75,23 +54,12 @@ public class HelloWorldBuilder extends Builder {
             return FormValidation.ok();
         }
 
-        public boolean isApplicable(Class<? extends AbstractProject> aClass) {
-            return true;
-        }
-
-        public String getDisplayName() {
-            return "Say hello world";
-        }
-
-        @Override
-        public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
-            useFrench = formData.getBoolean("useFrench");
-            save();
-            return super.configure(req,formData);
-        }
-
         public boolean getUseFrench() {
             return useFrench;
+        }
+        
+        public void setUseFrench(boolean french) {
+            useFrench = french;
         }
     }
 }
