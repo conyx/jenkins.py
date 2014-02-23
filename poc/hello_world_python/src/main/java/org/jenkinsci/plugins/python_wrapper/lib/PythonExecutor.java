@@ -57,6 +57,13 @@ public class PythonExecutor {
     }
     
     /*
+     * Call the function inside Jython interpreter
+     */
+    public void doPythonVoid(String function, Object ... params) {
+        doPythonGeneral(function, params);
+    }
+    
+    /*
      * Call the function inside Jython interpreter and return bool value
      */
     public boolean doPythonBool(String function, Object ... params) {
