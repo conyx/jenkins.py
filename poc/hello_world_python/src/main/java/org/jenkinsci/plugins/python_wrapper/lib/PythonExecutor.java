@@ -1,7 +1,11 @@
 package org.jenkinsci.plugins.python_wrapper.lib;
 
+import java.io.File;
+
 import org.python.util.PythonInterpreter;
 import org.python.core.*;
+
+import org.jenkinsci.plugins.hello_world_python.HelloWorldBuilder;///
 
 /*
  * Executes functions inside Jython interpreter
@@ -9,18 +13,40 @@ import org.python.core.*;
 public class PythonExecutor {
     
     private PythonInterpreter pinterp;
+    // callId guarantee unique attributes names for every function call inside Jython interpreter
     private int callId;
     
-    public PythonExecutor(PythonInterpreter _pinterp) {
-        pinterp = _pinterp;
-        // callId guarantee unique attributes names for every function call inside Jython interpreter
+    public PythonExecutor(Object javaWrapper) {
+        /// TODO unpack JAR static
+        /// ...
+        String scriptPath = getScriptPath(javaWrapper);
+        pinterp = new PythonInterpreter();
+        pinterp.execfile(scriptPath);
+        pinterp.set("wrapper", javaWrapper);
         callId = 0;
+    }
+    
+    /*
+     * Finds a correct file path of a python implementation for this wrapper
+     */
+    private String getScriptPath(Object javaWrapper) {
+        File class_folder = new File(javaWrapper.getClass().getProtectionDomain().getCodeSource().getLocation().getPath());
+        /// TODO generic python script path lookup
+        File delegate_script = new File(class_folder, "python");
+        if (javaWrapper.getClass() == HelloWorldBuilder.DescriptorImpl.class) {
+            delegate_script = new File(delegate_script, "descriptor_impl.py");
+        }
+        else if (javaWrapper.getClass() == HelloWorldBuilder.class) {
+            delegate_script = new File(delegate_script, "hello_world_builder.py");
+        }
+        return delegate_script.getPath();
+        ///
     }
     
     /*
      * Call the function inside Jython interpreter and return PyObject
      */
-    private PyObject doPythonGeneral(String function, Object ... params) {
+    private PyObject execPythonGeneral(String function, Object ... params) {
         // prepare function call string
         String paramName;
         String execStr = function + "(";
@@ -51,23 +77,79 @@ public class PythonExecutor {
     /*
      * Call the function inside Jython interpreter and return Java Object
      */
-    public Object doPython(Class<?> resultClass, String function, Object ... params) {
-        PyObject obj = doPythonGeneral(function, params);
+    public Object execPython(Class<?> resultClass, String function, Object ... params) {
+        PyObject obj = execPythonGeneral(function, params);
         return DataConvertor.toObject(obj, resultClass);
     }
     
     /*
      * Call the function inside Jython interpreter
      */
-    public void doPythonVoid(String function, Object ... params) {
-        doPythonGeneral(function, params);
+    public void execPythonVoid(String function, Object ... params) {
+        execPythonGeneral(function, params);
     }
     
     /*
      * Call the function inside Jython interpreter and return bool value
      */
-    public boolean doPythonBool(String function, Object ... params) {
-        PyObject obj = doPythonGeneral(function, params);
+    public boolean execPythonBool(String function, Object ... params) {
+        PyObject obj = execPythonGeneral(function, params);
         return DataConvertor.toBool(obj);
+    }
+    
+    /*
+     * Call the function inside Jython interpreter and return double value
+     */
+    public double execPythonDouble(String function, Object ... params) {
+        PyObject obj = execPythonGeneral(function, params);
+        return DataConvertor.toDouble(obj);
+    }
+    
+    /*
+     * Call the function inside Jython interpreter and return float value
+     */
+    public float execPythonFloat(String function, Object ... params) {
+        PyObject obj = execPythonGeneral(function, params);
+        return DataConvertor.toFloat(obj);
+    }
+    
+    /*
+     * Call the function inside Jython interpreter and return long value
+     */
+    public long execPythonLong(String function, Object ... params) {
+        PyObject obj = execPythonGeneral(function, params);
+        return DataConvertor.toLong(obj);
+    }
+    
+    /*
+     * Call the function inside Jython interpreter and return integer value
+     */
+    public int execPythonInt(String function, Object ... params) {
+        PyObject obj = execPythonGeneral(function, params);
+        return DataConvertor.toInt(obj);
+    }
+    
+    /*
+     * Call the function inside Jython interpreter and return short value
+     */
+    public short execPythonShort(String function, Object ... params) {
+        PyObject obj = execPythonGeneral(function, params);
+        return DataConvertor.toShort(obj);
+    }
+    
+    /*
+     * Call the function inside Jython interpreter and return byte value
+     */
+    public byte execPythonByte(String function, Object ... params) {
+        PyObject obj = execPythonGeneral(function, params);
+        return DataConvertor.toByte(obj);
+    }
+    
+    /*
+     * Call the function inside Jython interpreter and return char value
+     */
+    public char execPythonChar(String function, Object ... params) {
+        PyObject obj = execPythonGeneral(function, params);
+        return DataConvertor.toChar(obj);
     }
 }

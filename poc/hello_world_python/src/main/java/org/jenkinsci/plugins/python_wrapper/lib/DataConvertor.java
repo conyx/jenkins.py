@@ -40,4 +40,37 @@ public class DataConvertor {
     public static char toChar(PyObject obj) {
         return ((String)obj.__tojava__(String.class)).charAt(0);
     }
+    
+    // methods converts java types to PyObject
+    public static PyObject fromBool(boolean value) {
+        return new PyBoolean(value);
+    }
+    
+    public static PyObject fromDouble(double value) {
+        return new PyFloat(value);
+    }
+    
+    public static PyObject fromFloat(float value) {
+        return new PyFloat(value);
+    }
+    
+    public static PyObject fromLong(long value) {
+        return new PyLong(value);
+    }
+    
+    public static PyObject fromInt(int value) {
+        return new PyInteger(value);
+    }
+    
+    public static PyObject fromShort(short value) {
+        return new PyInteger(value);
+    }
+    
+    public static PyObject fromByte(byte value) {
+        return new PyInteger(value);
+    }
+    
+    public static PyObject fromChar(char value) {
+        return new PyString(value);
+    }
 }

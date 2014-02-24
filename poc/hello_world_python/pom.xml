@@ -11,7 +11,6 @@
   <version>0.1</version>
   <packaging>hpi</packaging>
 
-  <!-- get every artifact through repo.jenkins-ci.org, which proxies all the artifacts that we need -->
   <repositories>
     <repository>
       <id>repo.jenkins-ci.org</id>
@@ -41,7 +40,7 @@
   <build>
   <resources>
     <resource>
-      <directory>src/main/java</directory>
+      <directory>src/main</directory>
       <includes>
         <include>**/*.py</include>
       </includes>
@@ -49,7 +48,7 @@
     <resource>
         <directory>src/main/resources</directory>
         <filtering>false</filtering>
-      </resource>
+    </resource>
   </resources>
   </build>
 
