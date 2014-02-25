@@ -1,24 +1,24 @@
 package org.jenkinsci.plugins.python_wrapper.lib;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.jar.*;
+import java.util.Enumeration;
 
 import org.python.util.PythonInterpreter;
 import org.python.core.*;
 
-import org.jenkinsci.plugins.hello_world_python.HelloWorldBuilder;///
-
-/*
+/**
  * Executes functions inside Jython interpreter
  */
 public class PythonExecutor {
     
     private PythonInterpreter pinterp;
-    // callId guarantee unique attributes names for every function call inside Jython interpreter
+    // callId guarantees unique attributes' names for every function call inside Jython interpreter
     private int callId;
+    private boolean[] funcFlags;
     
     public PythonExecutor(Object javaWrapper) {
-        /// TODO unpack JAR static
-        /// ...
         String scriptPath = getScriptPath(javaWrapper);
         pinterp = new PythonInterpreter();
         pinterp.execfile(scriptPath);
@@ -26,24 +26,102 @@ public class PythonExecutor {
         callId = 0;
     }
     
-    /*
-     * Finds a correct file path of a python implementation for this wrapper
+    /**
+     * Determines if a function with the specified id is implemented in the Python script.
      */
-    private String getScriptPath(Object javaWrapper) {
-        File class_folder = new File(javaWrapper.getClass().getProtectionDomain().getCodeSource().getLocation().getPath());
-        /// TODO generic python script path lookup
-        File delegate_script = new File(class_folder, "python");
-        if (javaWrapper.getClass() == HelloWorldBuilder.DescriptorImpl.class) {
-            delegate_script = new File(delegate_script, "descriptor_impl.py");
-        }
-        else if (javaWrapper.getClass() == HelloWorldBuilder.class) {
-            delegate_script = new File(delegate_script, "hello_world_builder.py");
-        }
-        return delegate_script.getPath();
-        ///
+    public boolean isImplemented(int id) {
+        return funcFlags[id];
     }
     
-    /*
+    /**
+     * Search for all functions from the given array in the Python script and register
+     * availability flags for them.
+     */
+    public void registerFunctions(String[] functions, int[] argsCount) {
+        // init funcFlags with false values
+        funcFlags = new boolean[functions.length];
+        PyStringMap locals = (PyStringMap)pinterp.getLocals();
+        for (int i = 0; i < functions.length; i++) {
+            if (locals.has_key(functions[i])) {
+                // great, there is some variable with this name
+                PyObject obj = locals.get(new PyString(functions[i]));
+                if (obj.getClass() == PyFunction.class) {
+                    // great, it's a function
+                    PyFunction fnc = (PyFunction)obj;
+                    int aCount = ((PyTableCode)fnc.func_code).co_argcount;
+                    if (aCount == argsCount[i]) {
+                        // great, it accepts correct number of arguments
+                        funcFlags[i] = true;
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Finds a correct file path of a python implementation for this wrapper.
+     */
+    private String getScriptPath(Object javaWrapper) {
+        String className = javaWrapper.getClass().getName();
+        File scriptFile;
+        File classFolder = new File(javaWrapper.getClass().getProtectionDomain()
+                                               .getCodeSource().getLocation().getPath());
+        if (classFolder.getPath().endsWith(".jar")) {
+            // normal mode (plugin was properly installed)
+            /// TODO: this should be done by python_wrapper plugin in installation process
+            unpackPythonFiles(classFolder);
+            ///...
+            scriptFile = new File(classFolder.getParentFile(), "python");
+        }
+        else {
+            // "mvn hpi:run" mode (plugin debug)
+            scriptFile = new File(classFolder, "python");
+        }
+        scriptFile = new File(scriptFile, NameConvertor.javaClassToPythonFile(className));
+        return scriptFile.getPath();
+    }
+    
+    /**
+     * Unpack "python" folder with all files from the given JAR file
+     */
+    private void unpackPythonFiles(File jarFile) {
+        /// TODO: throw exceptions
+        File destDir = jarFile.getParentFile();
+        JarFile jar;
+        try {
+            jar = new JarFile(jarFile);
+        }
+        catch (IOException e) {
+            return;
+        }
+        Enumeration entries = jar.entries();
+        while (entries.hasMoreElements()) {
+            try {
+                JarEntry file = (JarEntry)entries.nextElement();
+                if (file.getName().startsWith("python")) {
+                    File f = new File(destDir, file.getName());
+                    if (file.isDirectory()) {
+                        f.mkdirs();
+                        continue;
+                    }
+                    File dir = f.getParentFile();
+                    dir.mkdirs();
+                    java.io.InputStream is = jar.getInputStream(file);
+                    java.io.FileOutputStream fos = new java.io.FileOutputStream(f);
+                    while (is.available() > 0) {
+                        fos.write(is.read());
+                    }
+                    fos.close();
+                    is.close();
+                }
+            }
+            catch (IOException e) {
+                
+            }
+        }
+    }
+    
+    /**
      * Call the function inside Jython interpreter and return PyObject
      */
     private PyObject execPythonGeneral(String function, Object ... params) {
@@ -74,7 +152,7 @@ public class PythonExecutor {
         return obj;
     }
     
-    /*
+    /**
      * Call the function inside Jython interpreter and return Java Object
      */
     public Object execPython(Class<?> resultClass, String function, Object ... params) {
@@ -82,14 +160,14 @@ public class PythonExecutor {
         return DataConvertor.toObject(obj, resultClass);
     }
     
-    /*
+    /**
      * Call the function inside Jython interpreter
      */
     public void execPythonVoid(String function, Object ... params) {
         execPythonGeneral(function, params);
     }
     
-    /*
+    /**
      * Call the function inside Jython interpreter and return bool value
      */
     public boolean execPythonBool(String function, Object ... params) {
@@ -97,7 +175,7 @@ public class PythonExecutor {
         return DataConvertor.toBool(obj);
     }
     
-    /*
+    /**
      * Call the function inside Jython interpreter and return double value
      */
     public double execPythonDouble(String function, Object ... params) {
@@ -105,7 +183,7 @@ public class PythonExecutor {
         return DataConvertor.toDouble(obj);
     }
     
-    /*
+    /**
      * Call the function inside Jython interpreter and return float value
      */
     public float execPythonFloat(String function, Object ... params) {
@@ -113,7 +191,7 @@ public class PythonExecutor {
         return DataConvertor.toFloat(obj);
     }
     
-    /*
+    /**
      * Call the function inside Jython interpreter and return long value
      */
     public long execPythonLong(String function, Object ... params) {
@@ -121,7 +199,7 @@ public class PythonExecutor {
         return DataConvertor.toLong(obj);
     }
     
-    /*
+    /**
      * Call the function inside Jython interpreter and return integer value
      */
     public int execPythonInt(String function, Object ... params) {
@@ -129,7 +207,7 @@ public class PythonExecutor {
         return DataConvertor.toInt(obj);
     }
     
-    /*
+    /**
      * Call the function inside Jython interpreter and return short value
      */
     public short execPythonShort(String function, Object ... params) {
@@ -137,7 +215,7 @@ public class PythonExecutor {
         return DataConvertor.toShort(obj);
     }
     
-    /*
+    /**
      * Call the function inside Jython interpreter and return byte value
      */
     public byte execPythonByte(String function, Object ... params) {
@@ -145,7 +223,7 @@ public class PythonExecutor {
         return DataConvertor.toByte(obj);
     }
     
-    /*
+    /**
      * Call the function inside Jython interpreter and return char value
      */
     public char execPythonChar(String function, Object ... params) {

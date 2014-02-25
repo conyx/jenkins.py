@@ -2,6 +2,9 @@ package org.jenkinsci.plugins.python_wrapper.lib;
 
 import org.python.core.*;
 
+/**
+ * Converts PyObject objects to java basic data types and vice versa.
+ */
 public class DataConvertor {
     
     // methods converts PyObject to java types

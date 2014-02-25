@@ -33,6 +33,7 @@ public class HelloWorldBuilder extends BuilderPW {
         private boolean useFrench;
 
         public FormValidation doCheckName(@QueryParameter String value) {
+            initPython();
             return (FormValidation)execPython(FormValidation.class, "do_check_name", value);
         }
 

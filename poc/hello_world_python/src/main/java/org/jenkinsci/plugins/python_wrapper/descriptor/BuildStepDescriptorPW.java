@@ -1,20 +1,11 @@
 package org.jenkinsci.plugins.python_wrapper.descriptor;
 
-import hudson.Launcher;
-import hudson.Extension;
-import hudson.util.FormValidation;
-import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
 import hudson.model.AbstractProject;
-import hudson.tasks.Builder;
-import hudson.tasks.BuildStepDescriptor;
 import net.sf.json.JSONObject;
-import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.QueryParameter;
-import hudson.tasks.BuildStep;
 import hudson.model.Describable;
-import hudson.model.Descriptor;
+import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.BuildStep;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
@@ -27,9 +18,16 @@ public class BuildStepDescriptorPW<T extends BuildStep & Describable<T>> extends
     private transient PythonExecutor pexec;
     
     // init method
-    private void initPython() {
+    public void initPython() {
         if (pexec == null) {
             pexec = new PythonExecutor(this);
+            String[] functions = {"get_display_name",
+                                  "is_applicable",
+                                  "configure"};
+            int[] argsCount = {0,
+                               1,
+                               2};
+            pexec.registerFunctions(functions, argsCount);
         }
     }
     
@@ -49,7 +47,12 @@ public class BuildStepDescriptorPW<T extends BuildStep & Describable<T>> extends
     @Override
     public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
         initPython();
-        return pexec.execPythonBool("configure", req, formData);
+        if (pexec.isImplemented(2)) {
+            return pexec.execPythonBool("configure", req, formData);
+        }
+        else {
+            return super.configure(req, formData);
+        }
     }
     //...
     
