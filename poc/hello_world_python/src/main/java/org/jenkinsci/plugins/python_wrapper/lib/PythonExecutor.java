@@ -1,9 +1,6 @@
 package org.jenkinsci.plugins.python_wrapper.lib;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.jar.*;
-import java.util.Enumeration;
 
 import org.python.util.PythonInterpreter;
 import org.python.core.*;
@@ -68,9 +65,7 @@ public class PythonExecutor {
                                                .getCodeSource().getLocation().getPath());
         if (classFolder.getPath().endsWith(".jar")) {
             // normal mode (plugin was properly installed)
-            /// TODO: this should be done by python_wrapper plugin in installation process
-            unpackPythonFiles(classFolder);
-            ///...
+            JARUnpacker.unpackPythonFiles(classFolder);
             scriptFile = new File(classFolder.getParentFile(), "python");
         }
         else {
@@ -82,49 +77,9 @@ public class PythonExecutor {
     }
     
     /**
-     * Unpack "python" folder with all files from the given JAR file
-     */
-    private void unpackPythonFiles(File jarFile) {
-        /// TODO: throw exceptions
-        File destDir = jarFile.getParentFile();
-        JarFile jar;
-        try {
-            jar = new JarFile(jarFile);
-        }
-        catch (IOException e) {
-            return;
-        }
-        Enumeration entries = jar.entries();
-        while (entries.hasMoreElements()) {
-            try {
-                JarEntry file = (JarEntry)entries.nextElement();
-                if (file.getName().startsWith("python")) {
-                    File f = new File(destDir, file.getName());
-                    if (file.isDirectory()) {
-                        f.mkdirs();
-                        continue;
-                    }
-                    File dir = f.getParentFile();
-                    dir.mkdirs();
-                    java.io.InputStream is = jar.getInputStream(file);
-                    java.io.FileOutputStream fos = new java.io.FileOutputStream(f);
-                    while (is.available() > 0) {
-                        fos.write(is.read());
-                    }
-                    fos.close();
-                    is.close();
-                }
-            }
-            catch (IOException e) {
-                
-            }
-        }
-    }
-    
-    /**
      * Call the function inside Jython interpreter and return PyObject
      */
-    private PyObject execPythonGeneral(String function, Object ... params) {
+    private PyObject execPythonGeneric(String function, Object ... params) {
         // prepare function call string
         String paramName;
         String execStr = function + "(";
@@ -156,7 +111,7 @@ public class PythonExecutor {
      * Call the function inside Jython interpreter and return Java Object
      */
     public Object execPython(Class<?> resultClass, String function, Object ... params) {
-        PyObject obj = execPythonGeneral(function, params);
+        PyObject obj = execPythonGeneric(function, params);
         return DataConvertor.toObject(obj, resultClass);
     }
     
@@ -164,14 +119,14 @@ public class PythonExecutor {
      * Call the function inside Jython interpreter
      */
     public void execPythonVoid(String function, Object ... params) {
-        execPythonGeneral(function, params);
+        execPythonGeneric(function, params);
     }
     
     /**
      * Call the function inside Jython interpreter and return bool value
      */
     public boolean execPythonBool(String function, Object ... params) {
-        PyObject obj = execPythonGeneral(function, params);
+        PyObject obj = execPythonGeneric(function, params);
         return DataConvertor.toBool(obj);
     }
     
@@ -179,7 +134,7 @@ public class PythonExecutor {
      * Call the function inside Jython interpreter and return double value
      */
     public double execPythonDouble(String function, Object ... params) {
-        PyObject obj = execPythonGeneral(function, params);
+        PyObject obj = execPythonGeneric(function, params);
         return DataConvertor.toDouble(obj);
     }
     
@@ -187,7 +142,7 @@ public class PythonExecutor {
      * Call the function inside Jython interpreter and return float value
      */
     public float execPythonFloat(String function, Object ... params) {
-        PyObject obj = execPythonGeneral(function, params);
+        PyObject obj = execPythonGeneric(function, params);
         return DataConvertor.toFloat(obj);
     }
     
@@ -195,7 +150,7 @@ public class PythonExecutor {
      * Call the function inside Jython interpreter and return long value
      */
     public long execPythonLong(String function, Object ... params) {
-        PyObject obj = execPythonGeneral(function, params);
+        PyObject obj = execPythonGeneric(function, params);
         return DataConvertor.toLong(obj);
     }
     
@@ -203,7 +158,7 @@ public class PythonExecutor {
      * Call the function inside Jython interpreter and return integer value
      */
     public int execPythonInt(String function, Object ... params) {
-        PyObject obj = execPythonGeneral(function, params);
+        PyObject obj = execPythonGeneric(function, params);
         return DataConvertor.toInt(obj);
     }
     
@@ -211,7 +166,7 @@ public class PythonExecutor {
      * Call the function inside Jython interpreter and return short value
      */
     public short execPythonShort(String function, Object ... params) {
-        PyObject obj = execPythonGeneral(function, params);
+        PyObject obj = execPythonGeneric(function, params);
         return DataConvertor.toShort(obj);
     }
     
@@ -219,7 +174,7 @@ public class PythonExecutor {
      * Call the function inside Jython interpreter and return byte value
      */
     public byte execPythonByte(String function, Object ... params) {
-        PyObject obj = execPythonGeneral(function, params);
+        PyObject obj = execPythonGeneric(function, params);
         return DataConvertor.toByte(obj);
     }
     
@@ -227,7 +182,7 @@ public class PythonExecutor {
      * Call the function inside Jython interpreter and return char value
      */
     public char execPythonChar(String function, Object ... params) {
-        PyObject obj = execPythonGeneral(function, params);
+        PyObject obj = execPythonGeneric(function, params);
         return DataConvertor.toChar(obj);
     }
 }
