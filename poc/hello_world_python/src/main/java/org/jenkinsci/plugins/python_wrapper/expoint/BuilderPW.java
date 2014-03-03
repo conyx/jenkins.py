@@ -10,7 +10,7 @@ import java.io.IOException;
 
 import org.jenkinsci.plugins.python_wrapper.lib.*;
 
-public class BuilderPW extends Builder {
+public abstract class BuilderPW extends Builder {
     
     private transient PythonExecutor pexec;
     

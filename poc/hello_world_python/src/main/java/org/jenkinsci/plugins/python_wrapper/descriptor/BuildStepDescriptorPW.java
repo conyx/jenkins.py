@@ -13,7 +13,7 @@ import java.io.File;
 
 import org.jenkinsci.plugins.python_wrapper.lib.*;
 
-public class BuildStepDescriptorPW<T extends BuildStep & Describable<T>> extends BuildStepDescriptor<T> {
+public abstract class BuildStepDescriptorPW<T extends BuildStep & Describable<T>> extends BuildStepDescriptor<T> {
     
     private transient PythonExecutor pexec;
     
