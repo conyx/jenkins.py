@@ -42,19 +42,7 @@ public abstract class BuildStepDescriptorPW<T extends BuildStep & Describable<T>
         }
     }
     
-    // wrapper methods
-    @Override
-    public String getDisplayName() {
-        initPython();
-        return (String)pexec.execPython(String.class, "get_display_name");
-    }
-    
-    @Override
-    public boolean isApplicable(Class<? extends AbstractProject> aClass) {
-        initPython();
-        return pexec.execPythonBool("is_applicable", aClass);
-    }
-    
+    // wrapped methods
     @Override
     public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
         initPython();
@@ -70,6 +58,20 @@ public abstract class BuildStepDescriptorPW<T extends BuildStep & Describable<T>
     // super methods
     public boolean configureSuper(StaplerRequest req, JSONObject formData) throws FormException {
         return super.configure(req, formData);
+    }
+    //...
+    
+    // wrapped methods (origin abstract methods)
+    @Override
+    public String getDisplayName() {
+        initPython();
+        return (String)pexec.execPython(String.class, "get_display_name");
+    }
+    
+    @Override
+    public boolean isApplicable(Class<? extends AbstractProject> aClass) {
+        initPython();
+        return pexec.execPythonBool("is_applicable", aClass);
     }
     //...
     

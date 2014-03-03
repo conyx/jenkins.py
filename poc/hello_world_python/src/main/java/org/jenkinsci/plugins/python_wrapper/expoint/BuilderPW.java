@@ -30,7 +30,7 @@ public abstract class BuilderPW extends Builder {
         }
     }
     
-    // wrapper methods
+    // wrapped methods
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         initPython();
@@ -47,6 +47,9 @@ public abstract class BuilderPW extends Builder {
     public boolean performSuper(AbstractBuild build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         return super.perform(build, launcher, listener);
     }
+    //...
+    
+    // wrapped methods (origin abstract methods)
     //...
     
     // exec python methods
