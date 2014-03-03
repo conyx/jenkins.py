@@ -1,2 +1,2 @@
 # Python Plugin Skeleton Maker #
-*  This tool creates plugin skeleton written in Python.
+*  This tool creates a plugin skeleton written in Python.
