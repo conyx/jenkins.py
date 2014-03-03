@@ -21,6 +21,17 @@ public class BuildStepDescriptorPW<T extends BuildStep & Describable<T>> extends
     public void initPython() {
         if (pexec == null) {
             pexec = new PythonExecutor(this);
+            // check abstract methods implementation
+            String[] jMethods = {"getDisplayName",
+                                 "isApplicable"};
+            String[] pFuncs = {"get_display_name",
+                               "is_applicable"};
+            Class<?>[][] argTypes = new Class<?>[2][];
+            argTypes[0] = new Class<?>[0];
+            argTypes[1] = new Class<?>[1];
+            argTypes[1][0] = Class.class;
+            pexec.checkAbstrMethods(jMethods, pFuncs, argTypes);
+            // find and register functions in python script
             String[] functions = {"get_display_name",
                                   "is_applicable",
                                   "configure"};

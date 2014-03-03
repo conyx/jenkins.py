@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.python_wrapper.lib;
 
 import java.io.File;
+import java.lang.reflect.Method;
 
 import org.python.util.PythonInterpreter;
 import org.python.core.*;
@@ -14,13 +15,15 @@ public class PythonExecutor {
     // callId guarantees unique attributes' names for every function call inside Jython interpreter
     private int callId;
     private boolean[] funcFlags;
+    private Object extension;
     
-    public PythonExecutor(Object javaWrapper) {
-        String scriptPath = getScriptPath(javaWrapper);
+    public PythonExecutor(Object _extension) throws PythonWrapperError {
+        String scriptPath = getScriptPath(_extension);
         pinterp = new PythonInterpreter();
         pinterp.execfile(scriptPath);
-        pinterp.set("wrapper", javaWrapper);
+        pinterp.set("wrapper", _extension);
         callId = 0;
+        extension = _extension;
     }
     
     /**
@@ -37,32 +40,93 @@ public class PythonExecutor {
     public void registerFunctions(String[] functions, int[] argsCount) {
         // init funcFlags with false values
         funcFlags = new boolean[functions.length];
-        PyStringMap locals = (PyStringMap)pinterp.getLocals();
         for (int i = 0; i < functions.length; i++) {
-            if (locals.has_key(functions[i])) {
-                // great, there is some variable with this name
-                PyObject obj = locals.get(new PyString(functions[i]));
-                if (obj.getClass() == PyFunction.class) {
-                    // great, it's a function
-                    PyFunction fnc = (PyFunction)obj;
-                    int aCount = ((PyTableCode)fnc.func_code).co_argcount;
-                    if (aCount == argsCount[i]) {
-                        // great, it accepts correct number of arguments
-                        funcFlags[i] = true;
-                    }
-                }
+            if (hasFunction(functions[i], argsCount[i])) {
+                // a function exists, mark it with the true flag
+                funcFlags[i] = true;
             }
         }
     }
     
     /**
-     * Finds a correct file path of a python implementation for this wrapper.
+     * Check if all abstract methods are implemented either in Java class or in Python script
+     * @throws PythonWrapperError if any of methods has no implementation.
      */
-    private String getScriptPath(Object javaWrapper) {
-        String className = javaWrapper.getClass().getName();
+    public void checkAbstrMethods(String[] jMethods, String[] pFuncs, Class<?>[][] argTypes) throws PythonWrapperError {
+        Method[] methods = extension.getClass().getDeclaredMethods();
+        for (int i = 0; i < jMethods.length; i++) {
+            boolean found = false;
+            if (hasFunction(pFuncs[i], argTypes[i].length)) {
+                // great, python implementation is presented
+                found = true;
+            }
+            else {
+                for (int j = 0; j < methods.length; j++) {
+                    Method m = methods[j];
+                    if (m.getName().equals(jMethods[i])) {
+                        Class<?>[] paramTypes = m.getParameterTypes();
+                        if (paramTypes.length != argTypes[i].length) {
+                            continue;
+                        }
+                        if (paramTypes.length == 0) {
+                            // this java method override the abstract method
+                            found = true;
+                            break;
+                        }
+                        for (int k = 0; k < paramTypes.length; k++) {
+                            if (paramTypes[k] != argTypes[i][k]) {
+                                break;
+                            }
+                            if (k == paramTypes.length - 1) {
+                                // this java method override the abstract method
+                                found = true;
+                            }
+                        }
+                    }
+                }
+            }
+            if (!found) {
+                // abstract method is not implemented, let's inform a developer!
+                throw new PythonWrapperError("The abstract method '" + jMethods[i] + "' of this extension " +
+                                             "has to be implemented in either " +
+                                             "Python (" + pFuncs[i] + "(" + new Integer(argTypes[i].length) + "))" +
+                                             " or " +
+                                             "Java (" + jMethods[i] + "(" + new Integer(argTypes[i].length) + ")).");
+            }
+        }
+        // great, all methods are implemented!
+    }
+    
+    /**
+     * Determines if there is a function with the given name and the correct number of arguments
+     * in the loaded script.
+     */
+    private boolean hasFunction(String name, int argsCount) {
+        PyStringMap locals = (PyStringMap)pinterp.getLocals();
+        if (locals.has_key(name)) {
+            // great, there is some variable with this name
+            PyObject obj = locals.get(new PyString(name));
+            if (obj.getClass() == PyFunction.class) {
+                // great, it's a function
+                PyFunction fnc = (PyFunction)obj;
+                int aCount = ((PyTableCode)fnc.func_code).co_argcount;
+                if (aCount == argsCount) {
+                    // great, it accepts correct number of arguments
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Finds a correct file path of a python implementation for this object.
+     */
+    private String getScriptPath(Object obj) throws PythonWrapperError {
+        String className = obj.getClass().getName();
         File scriptFile;
-        File classFolder = new File(javaWrapper.getClass().getProtectionDomain()
-                                               .getCodeSource().getLocation().getPath());
+        File classFolder = new File(obj.getClass().getProtectionDomain()
+                                       .getCodeSource().getLocation().getPath());
         if (classFolder.getPath().endsWith(".jar")) {
             // normal mode (plugin was properly installed)
             JARUnpacker.unpackPythonFiles(classFolder);

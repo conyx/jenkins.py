@@ -18,6 +18,12 @@ public class BuilderPW extends Builder {
     public void initPython() {
         if (pexec == null) {
             pexec = new PythonExecutor(this);
+            // check abstract methods implementation
+            String[] jMethods = {};
+            String[] pFuncs = {};
+            Class<?>[][] argTypes = new Class<?>[0][];
+            pexec.checkAbstrMethods(jMethods, pFuncs, argTypes);
+            // find and register functions in python script
             String[] functions = {"perform"};
             int[] argsCount = {3};
             pexec.registerFunctions(functions, argsCount);
@@ -41,5 +47,8 @@ public class BuilderPW extends Builder {
     public boolean performSuper(AbstractBuild build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         return super.perform(build, launcher, listener);
     }
+    //...
+    
+    // exec python methods
     //...
 }
