@@ -12,7 +12,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 public class WrapperMaker
 {
     public static void main(String args[]){
-		File inputDir = getInputDir(args);
+        File inputDir = getInputDir(args);
         File outputDir = getOutputDir(args);
         List<List<TypeDeclaration>> expoints = findAllExpoints(inputDir);
         List<List<TypeDeclaration>> descriptors = findAllDescriptors(inputDir);
