@@ -1,4 +1,4 @@
-package org.jenkinsci.plugins.python_wrapper.lib;
+package jenkins.python;
 
 public class NameConvertor {
     

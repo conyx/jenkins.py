@@ -1,4 +1,4 @@
-package org.jenkinsci.plugins.python_wrapper.lib;
+package jenkins.python;
 
 import java.io.File;
 import java.io.IOException;
