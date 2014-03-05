@@ -54,7 +54,7 @@ public abstract class AbstractTypeDeclFinder {
         }
     }
     
-    char[] readFile(File f) throws IOException 
+    char[] readFile(File f) throws IOException
     {
         Charset charset = Charset.forName(CHARSET);
         byte[] encoded = Files.readAllBytes(Paths.get(f.getPath()));
@@ -65,7 +65,7 @@ public abstract class AbstractTypeDeclFinder {
      * Search in the given file for wanted type declarations.
      */
     private void parseFile(File f) {
-        
+        // TODO
     }
     
     protected abstract boolean isWanted(TypeDeclaration typeDecl);
