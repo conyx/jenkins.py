@@ -15,6 +15,7 @@ public class WrapperMaker
         File inputDir = getInputDir(args);
         File outputDir = getOutputDir(args);
         List<List<TypeDeclaration>> expoints = findAllExpoints(inputDir);
+        Logger.info(new Integer(expoints.size()) + " extension points found");
         List<List<TypeDeclaration>> descriptors = findAllDescriptors(inputDir);
         makeExpointWrappers(expoints, outputDir);
         makeDescrWrappers(descriptors, outputDir);
@@ -24,7 +25,7 @@ public class WrapperMaker
      * Checks and returns a path to the Jenkins source code directory.
      */
     private static File getInputDir(String args[]) {
-        return new File("/");
+        return new File("C:\\Users\\Tomas\\repos\\jenkins\\core\\src\\main\\java");
     }
     
     /**
@@ -35,7 +36,9 @@ public class WrapperMaker
     }
     
     private static List<List<TypeDeclaration>> findAllExpoints(File srcDir) {
-        return new LinkedList<List<TypeDeclaration>>();
+        ExtensionPointFinder expointFinder = new ExtensionPointFinder(srcDir);
+        List<List<TypeDeclaration>> expoints = expointFinder.getAllDeclarations();
+        return expoints;
     }
     
     private static List<List<TypeDeclaration>> findAllDescriptors(File srcDir) {
