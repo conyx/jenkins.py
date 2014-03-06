@@ -26,10 +26,9 @@ public abstract class AbstractTypeDeclFinder {
     }
     
     /**
-     * Returns a list of lists of wanted type declarations and also all its parent
-     * declarations.
+     * Returns a list of lists of wanted type declarations and all its parent declarations.
      */
-    public List<List<TypeDeclaration>> getAllDeclarations() {
+    public List<List<TypeDeclaration>> getAllDeclarations() throws JavaParserException {
         wantedTypes = new LinkedList<List<TypeDeclaration>>();
         searchDir(sourceCodeDir);
         return wantedTypes;
@@ -38,7 +37,7 @@ public abstract class AbstractTypeDeclFinder {
     /**
      * Recursively search in the given directory for wanted type declarations.
      */
-    private void searchDir(File dir) {
+    private void searchDir(File dir) throws JavaParserException {
         File[] files = dir.listFiles();
         for (int i = 0; i < files.length; i++) {
             File f = files[i];
@@ -46,15 +45,19 @@ public abstract class AbstractTypeDeclFinder {
                 searchDir(f);
             }
             else if (f.getName().endsWith(".java")) {
-                parseFile(f);
+                Logger.verbose("parsing file " + f.getPath());
+                searchFile(f);
             }
             else {
-                Logger.warning("unknown file " + f.getName());
+                Logger.verbose("file " + f.getName() + " ignored");
             }
         }
     }
     
-    char[] readFile(File f) throws IOException
+    /**
+     * Returns the file as a char array.
+     */
+    private char[] readFile(File f) throws IOException
     {
         Charset charset = Charset.forName(CHARSET);
         byte[] encoded = Files.readAllBytes(Paths.get(f.getPath()));
@@ -62,11 +65,64 @@ public abstract class AbstractTypeDeclFinder {
     }
     
     /**
-     * Search in the given file for wanted type declarations.
+     * Search in the given file for the wanted type declaration.
      */
-    private void parseFile(File f) {
-        // TODO
+    private void searchFile(File f) throws JavaParserException {
+        ASTParser parser = ASTParser.newParser(AST.JLS4);
+        try {
+            parser.setSource(readFile(f));
+        }
+        catch (IOException e) {
+            String errStr = "cannot parse file " + f.getPath() + " caused by " + e.getMessage();
+            throw new JavaParserException(errStr);
+        }
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		final CompilationUnit cu = (CompilationUnit) parser.createAST(null);
+        TypeDeclVisitor visitor = new TypeDeclVisitor();
+		cu.accept(visitor);
+        if (visitor.getFound()) {
+            String typeName = visitor.getTypeDecl().getName().getIdentifier();
+            /// TODO getFullName and use in logger (also inner classes) (for types and decls)
+            /// TODO get file path for some type or type decl (also inner classes)
+            Logger.info("extension point " + typeName + " found");
+            List<TypeDeclaration> list = new LinkedList<TypeDeclaration>();
+            // add the found type declaration to the list
+            list.add(visitor.getTypeDecl());
+            /// TODO search for parent classes
+            /// TODO save temp parent classes as map fullName: TypeDeclaration
+            // add the list (of the type declaration and its parents) to the wanted types list
+            wantedTypes.add(list);
+        }
     }
     
+    /**
+     * Determines if a type declaration is wanted by a concrete finder.
+     */
     protected abstract boolean isWanted(TypeDeclaration typeDecl);
+    
+    
+    /**
+     * Visits all TypeDeclaration nodes and checks if they are wanted.
+     * Only the last wanted node in the tree is saved!!
+     */
+    class TypeDeclVisitor extends ASTVisitor {
+        private boolean found = false;
+        private TypeDeclaration typeDecl;
+        
+        public boolean visit(TypeDeclaration node) {
+            if (isWanted(node)) {
+                found = true;
+                typeDecl = node;
+            }
+            return true;
+        }
+        
+        public boolean getFound() {
+            return found;
+        }
+        
+        public TypeDeclaration getTypeDecl() {
+            return typeDecl;
+        }
+    }
 }

@@ -12,13 +12,19 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 public class WrapperMaker
 {
     public static void main(String args[]){
-        File inputDir = getInputDir(args);
-        File outputDir = getOutputDir(args);
-        List<List<TypeDeclaration>> expoints = findAllExpoints(inputDir);
-        Logger.info(new Integer(expoints.size()) + " extension points found");
-        List<List<TypeDeclaration>> descriptors = findAllDescriptors(inputDir);
-        makeExpointWrappers(expoints, outputDir);
-        makeDescrWrappers(descriptors, outputDir);
+        try {
+            File inputDir = getInputDir(args);
+            File outputDir = getOutputDir(args);
+            List<List<TypeDeclaration>> expoints = findAllExpoints(inputDir);
+            Logger.info(new Integer(expoints.size()) + " extension points found");
+            List<List<TypeDeclaration>> descriptors = findAllDescriptors(inputDir);
+            makeExpointWrappers(expoints, outputDir);
+            makeDescrWrappers(descriptors, outputDir);
+            Logger.info("pwm successfully ended");
+        }
+        catch (WrapperMakerException e) {
+            Logger.error(e.getMessage());
+        }
 	}
     
     /**
@@ -35,7 +41,7 @@ public class WrapperMaker
         return new File("/");
     }
     
-    private static List<List<TypeDeclaration>> findAllExpoints(File srcDir) {
+    private static List<List<TypeDeclaration>> findAllExpoints(File srcDir) throws JavaParserException  {
         ExtensionPointFinder expointFinder = new ExtensionPointFinder(srcDir);
         List<List<TypeDeclaration>> expoints = expointFinder.getAllDeclarations();
         return expoints;

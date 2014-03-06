@@ -7,7 +7,6 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.Name;
-import org.eclipse.jdt.core.dom.IBinding;
 
 public class ExtensionPointFinder extends AbstractTypeDeclFinder {
     
@@ -16,9 +15,10 @@ public class ExtensionPointFinder extends AbstractTypeDeclFinder {
     }
     
     /**
-     * Determines if given TypeDeclaration implements interface ExtensionPoint.
+     * Determines if a given TypeDeclaration node implements the interface ExtensionPoint.
      */
     protected boolean isWanted(TypeDeclaration typeDecl) {
+        String nodeName = typeDecl.getName().getIdentifier();
         List<Type> interfaces = (List<Type>)typeDecl.superInterfaceTypes();
         for (int i = 0; i < interfaces.size(); i++) {
             Type iface_ = interfaces.get(i);
@@ -26,10 +26,8 @@ public class ExtensionPointFinder extends AbstractTypeDeclFinder {
                 SimpleType iface = (SimpleType)iface_;
                 Name name = iface.getName();
                 String fullName = name.getFullyQualifiedName();
-                Logger.verbose("type implements interface " + fullName);
-                IBinding binding = name.resolveBinding();
-                Logger.verbose("binding of this interface is " + binding.getName());
                 if (fullName.equals("ExtensionPoint")) {
+                    Logger.verbose("type " + nodeName + " implements interface " + fullName);
                     return true;
                 }
             }

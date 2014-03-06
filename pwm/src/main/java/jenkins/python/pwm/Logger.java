@@ -2,7 +2,7 @@ package jenkins.python.pwm;
 
 public class Logger {
     
-    private static boolean verbose = true;
+    private static boolean verbose = false;
     
     public static void info(String text) {
         System.out.println("[INFO] " + text);
