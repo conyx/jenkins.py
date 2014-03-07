@@ -20,7 +20,7 @@ public class WrapperMaker
             List<List<TypeDeclaration>> descriptors = findAllDescriptors(inputDir);
             makeExpointWrappers(expoints, outputDir);
             makeDescrWrappers(descriptors, outputDir);
-            Logger.info("pwm successfully ended");
+            Logger.info("WRAPPERS HAVE BEEN SUCCESSFULLY CREATED");
         }
         catch (WrapperMakerException e) {
             Logger.error(e.getMessage());
@@ -31,7 +31,7 @@ public class WrapperMaker
      * Checks and returns a path to the Jenkins source code directory.
      */
     private static File getInputDir(String args[]) {
-        return new File("C:\\Users\\Tomas\\repos\\jenkins\\core\\src\\main\\java");
+        return new File("/home/tomas/repos/jenkins");
     }
     
     /**
