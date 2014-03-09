@@ -26,8 +26,8 @@ public class ExtensionPointFinder extends AbstractTypeDeclFinder {
                 SimpleType iface = (SimpleType)iface_;
                 Name name = iface.getName();
                 String fullName = name.getFullyQualifiedName();
-                if (fullName.equals("ExtensionPoint")) {
-                    Logger.verbose("type " + nodeName + " implements interface " + fullName);
+                if (fullName.equals("ExtensionPoint") || fullName.endsWith(".ExtensionPoint")) {
+                    Logger.info("extension point " + nodeName + " found");
                     return true;
                 }
             }

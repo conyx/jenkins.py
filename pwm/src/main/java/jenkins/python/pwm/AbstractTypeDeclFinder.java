@@ -14,6 +14,7 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.QualifiedType;
 
 public abstract class AbstractTypeDeclFinder {
     
@@ -26,7 +27,7 @@ public abstract class AbstractTypeDeclFinder {
     }
     
     /**
-     * Returns a list of lists of wanted type declarations and all its parent declarations.
+     * Returns a list of lists of wanted type declarations and all parent type declarations.
      */
     public List<List<TypeDeclaration>> getAllDeclarations() throws JavaParserException {
         wantedTypes = new LinkedList<List<TypeDeclaration>>();
@@ -39,13 +40,17 @@ public abstract class AbstractTypeDeclFinder {
      */
     private void searchDir(File dir) throws JavaParserException {
         File[] files = dir.listFiles();
+        if (files == null) {
+            String errStr = "error while scanning directory " + dir.getPath() + " occured";
+            throw new JavaParserException(errStr);
+        }
         for (int i = 0; i < files.length; i++) {
             File f = files[i];
             if (f.isDirectory()) {
                 searchDir(f);
             }
             else if (f.getName().endsWith(".java")) {
-                Logger.verbose("parsing file " + f.getPath());
+                Logger.error("parsing file " + f.getPath());/// TODO verbose
                 searchFile(f);
             }
             else {
@@ -78,13 +83,12 @@ public abstract class AbstractTypeDeclFinder {
         }
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
 		final CompilationUnit cu = (CompilationUnit) parser.createAST(null);
-        TypeDeclVisitor visitor = new TypeDeclVisitor();
+        WantedTypeVisitor visitor = new WantedTypeVisitor();
 		cu.accept(visitor);
         if (visitor.getFound()) {
-            String typeName = visitor.getTypeDecl().getName().getIdentifier();
-            /// TODO getFullName and use in logger (also inner classes) (for types and decls)
+            String typeName = NameResolver.resolveName(visitor.getTypeDecl());
             /// TODO get file path for some type or type decl (also inner classes)
-            Logger.info("extension point " + typeName + " found");
+            Logger.verbose("wanted type declaration " + typeName + " found");
             List<TypeDeclaration> list = new LinkedList<TypeDeclaration>();
             // add the found type declaration to the list
             list.add(visitor.getTypeDecl());
@@ -105,7 +109,7 @@ public abstract class AbstractTypeDeclFinder {
      * Visits all TypeDeclaration nodes and checks if they are wanted.
      * Only the last wanted node in the tree is saved!!
      */
-    class TypeDeclVisitor extends ASTVisitor {
+    private class WantedTypeVisitor extends ASTVisitor {
         private boolean found = false;
         private TypeDeclaration typeDecl;
         
@@ -116,6 +120,11 @@ public abstract class AbstractTypeDeclFinder {
             }
             return true;
         }
+        
+        public boolean visit(QualifiedType node) {/// TODO remove
+            Logger.error("TYPE: " + NameResolver.resolveName(node));///
+            return true;///
+        }///
         
         public boolean getFound() {
             return found;
