@@ -86,7 +86,7 @@ public abstract class AbstractTypeDeclFinder {
         WantedTypeVisitor visitor = new WantedTypeVisitor();
 		cu.accept(visitor);
         if (visitor.getFound()) {
-            String typeName = NameResolver.resolveName(visitor.getTypeDecl());
+            String typeName = NameResolver.getFullName(visitor.getTypeDecl());
             /// TODO get file path for some type or type decl (also inner classes)
             Logger.verbose("wanted type declaration " + typeName + " found");
             List<TypeDeclaration> list = new LinkedList<TypeDeclaration>();
@@ -122,7 +122,7 @@ public abstract class AbstractTypeDeclFinder {
         }
         
         public boolean visit(QualifiedType node) {/// TODO remove
-            Logger.error("TYPE: " + NameResolver.resolveName(node));///
+            Logger.error("TYPE: " + NameResolver.getFullName(node));///
             return true;///
         }///
         

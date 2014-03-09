@@ -38,7 +38,7 @@ public class WrapperMaker
      */
     private static File getInputDir(String args[]) {
         /// TODO resolve args
-        return new File("/home/tomas/repos/jenkins/core/src/main/java");
+        return new File("C:\\Users\\Tomas\\repos\\jenkins\\core\\src\\main\\java");
     }
     
     private static List<List<TypeDeclaration>> findAllExpoints(File srcDir) throws JavaParserException  {
