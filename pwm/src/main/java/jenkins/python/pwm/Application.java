@@ -7,7 +7,7 @@ import java.util.LinkedList;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 
 /**
- * Main class of the pwm tool.
+ * Main class of the PWM tool.
  */
 public class Application
 {
@@ -45,9 +45,44 @@ public class Application
      * The suffix ./core/src/main/java/ is added to the user defined input path.
      * Determines if the program should continue.
      */
-    private static boolean checkParams(String args[]) {
-        /// TODO resolve args -i --input-dir -v --verbose -h --help
-        sourceDir = new File("C:\\Users\\Tomas\\repos\\jenkins\\core\\src\\main\\java");
+    private static boolean checkParams(String args[]) throws WrapperMakerException {
+        String incorrectArgs = "incorrect arguments, try java -jar pwm.jar -h for the help";
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].equals("-v") || args[i].equals("--verbose")) {
+                Logger.setVerbose(true);
+            }
+            else if (args[i].equals("-h") || args[i].equals("--help")) {
+                System.out.println(
+                "Python Wrapper Maker version 1.0\n" +
+                "--------------------------------\n" +
+                "Creates wrapper classes for the python-wrapper plugin.\n" +
+                "Usage: java -jar pwm.jar [-v] -i jenkins_source_code_directory\n" +
+                "   or  java -jar pwm.jar -h");
+                return false;
+            }
+            else if (args[i].equals("-i") || args[i].equals("--input-dir")) {
+                if (i == args.length-1) {
+                    throw new WrapperMakerException(incorrectArgs);
+                }
+                else {
+                    sourceDir = new File(args[i+1]);
+                    sourceDir = new File(sourceDir, "core/src/main/java");
+                    if (!sourceDir.isDirectory()) {
+                        throw new WrapperMakerException("input directory " +
+                                                        sourceDir.getPath() +
+                                                        " does not exist!");
+                    }
+                    i++;
+                }
+            }
+            else {
+                throw new WrapperMakerException(incorrectArgs);
+            }
+        }
+        if (sourceDir == null) {
+            Logger.error("you have to determine input directory!");
+            throw new WrapperMakerException(incorrectArgs);
+        }
         return true;
     }
     
