@@ -174,9 +174,9 @@ public class PythonExecutor {
     /**
      * Call the function inside Jython interpreter and return Java Object
      */
-    public Object execPython(Class<?> resultClass, String function, Object ... params) {
+    public Object execPython(String function, Object ... params) {
         PyObject obj = execPythonGeneric(function, params);
-        return DataConvertor.toObject(obj, resultClass);
+        return DataConvertor.toObject(obj, Object.class);
     }
     
     /**

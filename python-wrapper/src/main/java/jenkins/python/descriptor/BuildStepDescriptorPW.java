@@ -65,7 +65,7 @@ public abstract class BuildStepDescriptorPW<T extends BuildStep & Describable<T>
     @Override
     public String getDisplayName() {
         initPython();
-        return (String)pexec.execPython(String.class, "get_display_name");
+        return (String)pexec.execPython("get_display_name");
     }
     
     @Override
@@ -76,8 +76,8 @@ public abstract class BuildStepDescriptorPW<T extends BuildStep & Describable<T>
     //...
     
     // exec python methods
-    public Object execPython(Class<?> resultClass, String function, Object ... params) {
-        return pexec.execPython(resultClass, function, params);
+    public Object execPython(String function, Object ... params) {
+        return pexec.execPython(function, params);
     }
     //...
 }
