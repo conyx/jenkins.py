@@ -32,7 +32,7 @@ public class Application
         catch (WrapperMakerException e) {
             Logger.error(e.getMessage());
         }
-	}
+    }
     
     public static File getSrcDir() {
         return sourceDir;

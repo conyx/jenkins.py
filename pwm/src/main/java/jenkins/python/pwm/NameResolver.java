@@ -80,14 +80,14 @@ public class NameResolver {
         CompilationUnit root = (CompilationUnit)name.getRoot();
         // check if the name is declared in the same file
         TypeDeclVisitor tdVisitor = new TypeDeclVisitor(name.getFullyQualifiedName());
-		root.accept(tdVisitor);
+        root.accept(tdVisitor);
         if (tdVisitor.getFound()) {
             // the name is the use of the TypeDeclaration in the same file
             return getFullName(tdVisitor.getTypeDecl());
         }
         // check if the name is declared in the same package or imported
         PckgImprtVisitor piVisitor = new PckgImprtVisitor(name.getFullyQualifiedName());
-		root.accept(piVisitor);
+        root.accept(piVisitor);
         if (piVisitor.getFound()) {
             // the name is declared in the same package or imported
             return piVisitor.getFullName();

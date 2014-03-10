@@ -82,10 +82,10 @@ public abstract class AbstractTypeDeclFinder {
             String errStr = "cannot parse file " + f.getPath() + " caused by " + e.getMessage();
             throw new JavaParserException(errStr);
         }
-		parser.setKind(ASTParser.K_COMPILATION_UNIT);
-		CompilationUnit cu = (CompilationUnit) parser.createAST(null);
+        parser.setKind(ASTParser.K_COMPILATION_UNIT);
+        CompilationUnit cu = (CompilationUnit) parser.createAST(null);
         WantedTypeVisitor visitor = new WantedTypeVisitor();
-		cu.accept(visitor);
+        cu.accept(visitor);
         if (visitor.getFound()) {
             String typeName = NameResolver.getFullName(visitor.getTypeDecl());
             Logger.verbose("wanted type declaration " + typeName + " found");
