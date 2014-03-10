@@ -11,14 +11,17 @@ import org.eclipse.jdt.core.dom.Name;
 
 public class DescriptorFinder extends AbstractTypeDeclFinder {
     
-    public DescriptorFinder(File sourceCodeDir) {
-        super(sourceCodeDir);
+    public DescriptorFinder() {
+        super();
     }
     
     /**
      * Determines if a given TypeDeclaration node extends the class Descriptor.
      */
     protected boolean isWanted(TypeDeclaration typeDecl) {
+        if (!isAbstract(typeDecl)) {
+            return false;
+        }
         String nodeName = typeDecl.getName().getIdentifier();
         Type superClass = typeDecl.getSuperclassType();
         if (superClass != null && superClass.isParameterizedType()) {

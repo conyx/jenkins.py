@@ -11,15 +11,17 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
  */
 public class WrapperMaker
 {
+    private static File sourceDir;
+    
     public static void main(String args[]){
         try {
             // check input directory
-            File inputDir = getInputDir(args);
+            sourceDir = getInputDir(args);
             // find all extension points and all of their superclasses
-            List<List<TypeDeclaration>> expoints = findAllExpoints(inputDir);
+            List<List<TypeDeclaration>> expoints = findAllExpoints();
             Logger.info(new Integer(expoints.size()) + " EXTENSION POINTS FOUND");
             // find all descriptors and all of their superclasses
-            List<List<TypeDeclaration>> descriptors = findAllDescriptors(inputDir);
+            List<List<TypeDeclaration>> descriptors = findAllDescriptors();
             Logger.info(new Integer(descriptors.size()) + " DESCRIPTORS FOUND");
             // create wrappers for extension points
             makeExpointWrappers(expoints, new File("expoint"));
@@ -32,6 +34,10 @@ public class WrapperMaker
         }
 	}
     
+    public static File getSrcDir() {
+        return sourceDir;
+    }
+    
     /**
      * Checks and returns a path to the Jenkins source code directory.
      * The suffix ./core/src/main/java/ is added to the user defined input path.
@@ -41,14 +47,14 @@ public class WrapperMaker
         return new File("C:\\Users\\Tomas\\repos\\jenkins\\core\\src\\main\\java");
     }
     
-    private static List<List<TypeDeclaration>> findAllExpoints(File srcDir) throws JavaParserException  {
-        ExtensionPointFinder expointFinder = new ExtensionPointFinder(srcDir);
+    private static List<List<TypeDeclaration>> findAllExpoints() throws JavaParserException  {
+        ExtensionPointFinder expointFinder = new ExtensionPointFinder();
         List<List<TypeDeclaration>> expoints = expointFinder.getAllDeclarations();
         return expoints;
     }
     
-    private static List<List<TypeDeclaration>> findAllDescriptors(File srcDir) throws JavaParserException {
-        DescriptorFinder descriptorFinder = new DescriptorFinder(srcDir);
+    private static List<List<TypeDeclaration>> findAllDescriptors() throws JavaParserException {
+        DescriptorFinder descriptorFinder = new DescriptorFinder();
         List<List<TypeDeclaration>> descriptors = descriptorFinder.getAllDeclarations();
         return descriptors;
     }

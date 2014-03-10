@@ -10,8 +10,8 @@ import org.eclipse.jdt.core.dom.Name;
 
 public class ExtensionPointFinder extends AbstractTypeDeclFinder {
     
-    public ExtensionPointFinder(File sourceCodeDir) {
-        super(sourceCodeDir);
+    public ExtensionPointFinder() {
+        super();
     }
     
     /**

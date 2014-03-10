@@ -1,6 +1,7 @@
 package jenkins.python.pwm;
 
 import java.util.List;
+import java.io.File;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
@@ -20,6 +21,9 @@ import org.eclipse.jdt.core.dom.ImportDeclaration;
  */
 public class NameResolver {
     
+    /**
+     * Evaluates fully qualified name of the TypeDeclaration object.
+     */
     public static String getFullName(TypeDeclaration decl) {
         String name = decl.getName().getIdentifier();
         ASTNode parent = decl.getParent();
@@ -39,6 +43,9 @@ public class NameResolver {
         return name;
     }
     
+    /**
+     * Evaluates fully qualified name of the Type object.
+     */
     public static String getFullName(Type t) {
         if (t.isParameterizedType()) {
             ParameterizedType t0 = (ParameterizedType)t;
@@ -58,47 +65,96 @@ public class NameResolver {
         }
     }
     
+    /**
+     * Evaluates fully qualified name of the Name object.
+     */
     public static String getFullName(Name name) {
+        // check if the root node is a CompilationUnit
         if (name.getRoot().getClass() != CompilationUnit.class) {
-            // cannot resolve full name, root node is missing
-            Logger.error("cannot resolve a name, CompilationUnit root does not exist");
+            // cannot resolve a full name, CompilationUnit root node is missing
+            Logger.error("cannot resolve a name, a root node does not exist");
+            Logger.error("NAME: " + name.getFullyQualifiedName());
             return name.getFullyQualifiedName();
         }
+        // get the root node
         CompilationUnit root = (CompilationUnit)name.getRoot();
-        List<ImportDeclaration> imports = root.imports();
-        for (int i = 0; i < imports.size(); i++) {
-            String importName = imports.get(i).getName().getFullyQualifiedName();
-            if (importName.endsWith("." + name.getFullyQualifiedName())) {
-                // A -> some.package.A (some.package.A imported)
-                Logger.error("TYPE IMPORTED"); /// TODO remove
-                return importName;
-            }
-            if (name.getFullyQualifiedName().contains(".")) {
-                String[] names = name.getFullyQualifiedName().split("\\.");
-                if (importName.endsWith("." + names[0])) {
-                    String fullName = importName;
-                    for (int j = 1; j < names.length; j++) {
-                        fullName += "." + names[j];
-                    }
-                    // A.B -> some.package.A.B (some.package.A imported)
-                    Logger.error("TYPE IMPORTED 2"); /// TODO remove
-                    return fullName;
-                }
-            }
-        }
-        TypeDeclVisitor visitor = new TypeDeclVisitor(name.getFullyQualifiedName());
-		root.accept(visitor);
-        if (visitor.getFound()) {
+        // check if the name is declared in the same file
+        TypeDeclVisitor tdVisitor = new TypeDeclVisitor(name.getFullyQualifiedName());
+		root.accept(tdVisitor);
+        if (tdVisitor.getFound()) {
             // the name is the use of the TypeDeclaration in the same file
-            Logger.error("TYPE DECLARATION"); /// TODO remove
-            return getFullName(visitor.getTypeDecl());
+            return getFullName(tdVisitor.getTypeDecl());
         }
-        /// TODO search in the package folder
-        /// TODO search in .* imports
-        // still could be a class from the java.lang (String) or a param name (T, E,...)
-        Logger.error("TYPE GENERIC"); /// TODO remove
+        // check if the name is declared in the same package or imported
+        PckgImprtVisitor piVisitor = new PckgImprtVisitor(name.getFullyQualifiedName());
+		root.accept(piVisitor);
+        if (piVisitor.getFound()) {
+            // the name is declared in the same package or imported
+            return piVisitor.getFullName();
+        }
+        // could be a class from the java.lang (String) or a param name (T, E,...)
         return name.getFullyQualifiedName();
     }
+    
+    
+    private static class PckgImprtVisitor extends ASTVisitor {
+        private boolean found = false;
+        private String fullName;
+        private String name;
+        private String[] nameParts;
+        
+        PckgImprtVisitor(String aName) {
+            super();
+            name = aName;
+            nameParts = name.split("\\.");
+        }
+        
+        private void checkInDir(String dirName) {
+            File path = PathResolver.getPath(dirName);
+            String fileName = nameParts[0] + ".java";
+            File f = new File(path, fileName);
+            if (path.isDirectory() && f.isFile()) {
+                fullName = dirName;
+                for (int i = 0; i < nameParts.length; i++) {
+                    fullName += "." + nameParts[i];
+                }
+                found = true;
+            }
+        }
+        
+        public boolean visit(PackageDeclaration node) {
+            String pckgName = node.getName().getFullyQualifiedName();
+            checkInDir(pckgName);
+            return true;
+        }
+        
+        public boolean visit(ImportDeclaration node) {
+            if (node.isOnDemand()) {
+                String pckgName = node.getName().getFullyQualifiedName();
+                checkInDir(pckgName);
+            }
+            else {
+                String importName = node.getName().getFullyQualifiedName();
+                if (importName.endsWith("." + nameParts[0])) {
+                    fullName = importName;
+                    for (int i = 1; i < nameParts.length; i++) {
+                        fullName += "." + nameParts[i];
+                    }
+                    found = true;
+                }
+            }
+            return true;
+        }
+        
+        public boolean getFound() {
+            return found;
+        }
+        
+        public String getFullName() {
+            return fullName;
+        }
+    }
+    
     
     private static class TypeDeclVisitor extends ASTVisitor {
         private boolean found = false;

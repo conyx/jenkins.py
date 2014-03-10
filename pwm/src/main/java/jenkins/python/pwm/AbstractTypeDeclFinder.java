@@ -14,7 +14,8 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
-import org.eclipse.jdt.core.dom.QualifiedType;
+import org.eclipse.jdt.core.dom.ParameterizedType;
+import org.eclipse.jdt.core.dom.Modifier;
 
 public abstract class AbstractTypeDeclFinder {
     
@@ -22,8 +23,8 @@ public abstract class AbstractTypeDeclFinder {
     private final File sourceCodeDir;
     private List<List<TypeDeclaration>> wantedTypes;
     
-    public AbstractTypeDeclFinder(File sourceCodeDir_) {
-        sourceCodeDir = sourceCodeDir_;
+    public AbstractTypeDeclFinder() {
+        sourceCodeDir = WrapperMaker.getSrcDir();
     }
     
     /**
@@ -50,7 +51,7 @@ public abstract class AbstractTypeDeclFinder {
                 searchDir(f);
             }
             else if (f.getName().endsWith(".java")) {
-                Logger.error("parsing file " + f.getPath());/// TODO verbose
+                Logger.verbose("parsing file " + f.getPath());
                 searchFile(f);
             }
             else {
@@ -82,12 +83,11 @@ public abstract class AbstractTypeDeclFinder {
             throw new JavaParserException(errStr);
         }
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
-		final CompilationUnit cu = (CompilationUnit) parser.createAST(null);
+		CompilationUnit cu = (CompilationUnit) parser.createAST(null);
         WantedTypeVisitor visitor = new WantedTypeVisitor();
 		cu.accept(visitor);
         if (visitor.getFound()) {
             String typeName = NameResolver.getFullName(visitor.getTypeDecl());
-            /// TODO get file path for some type or type decl (also inner classes)
             Logger.verbose("wanted type declaration " + typeName + " found");
             List<TypeDeclaration> list = new LinkedList<TypeDeclaration>();
             // add the found type declaration to the list
@@ -96,6 +96,15 @@ public abstract class AbstractTypeDeclFinder {
             /// TODO save temp parent classes as map fullName: TypeDeclaration
             // add the list (of the type declaration and its parents) to the wanted types list
             wantedTypes.add(list);
+        }
+    }
+    
+    protected boolean isAbstract(TypeDeclaration td) {
+        if (Modifier.isAbstract(td.getModifiers())) {
+            return true;
+        }
+        else {
+            return false;
         }
     }
     
@@ -120,11 +129,6 @@ public abstract class AbstractTypeDeclFinder {
             }
             return true;
         }
-        
-        public boolean visit(QualifiedType node) {/// TODO remove
-            Logger.error("TYPE: " + NameResolver.getFullName(node));///
-            return true;///
-        }///
         
         public boolean getFound() {
             return found;
