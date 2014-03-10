@@ -21,4 +21,8 @@ public class Logger {
     public static void error(String text) {
         System.err.println("[ERROR] " + text);
     }
+    
+    public static void setVerbose(boolean flag) {
+        verbose = flag;
+    }
 }

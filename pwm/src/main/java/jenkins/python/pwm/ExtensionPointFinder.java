@@ -18,6 +18,9 @@ public class ExtensionPointFinder extends AbstractTypeDeclFinder {
      * Determines if a given TypeDeclaration node implements the interface ExtensionPoint.
      */
     protected boolean isWanted(TypeDeclaration typeDecl) {
+        if (typeDecl.isInterface()) {
+            return false;
+        }
         String nodeName = typeDecl.getName().getIdentifier();
         List<Type> interfaces = (List<Type>)typeDecl.superInterfaceTypes();
         for (int i = 0; i < interfaces.size(); i++) {

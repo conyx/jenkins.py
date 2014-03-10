@@ -15,8 +15,10 @@ public class Application
     
     public static void main(String args[]){
         try {
-            // check input directory
-            sourceDir = getInputDir(args);
+            // check parameters
+            if (!checkParams(args)) {
+                return;
+            }
             // find all extension points and all of their superclasses
             List<List<TypeDeclaration>> expoints = findAllExpoints();
             Logger.info(new Integer(expoints.size()) + " EXTENSION POINTS FOUND");
@@ -39,12 +41,14 @@ public class Application
     }
     
     /**
-     * Checks and returns a path to the Jenkins source code directory.
+     * Checks parameters and sets a path to the Jenkins source code directory.
      * The suffix ./core/src/main/java/ is added to the user defined input path.
+     * Determines if the program should continue.
      */
-    private static File getInputDir(String args[]) {
-        /// TODO resolve args
-        return new File("C:\\Users\\Tomas\\repos\\jenkins\\core\\src\\main\\java");
+    private static boolean checkParams(String args[]) {
+        /// TODO resolve args -i --input-dir -v --verbose -h --help
+        sourceDir = new File("C:\\Users\\Tomas\\repos\\jenkins\\core\\src\\main\\java");
+        return true;
     }
     
     private static List<List<TypeDeclaration>> findAllExpoints() throws JavaParserException  {

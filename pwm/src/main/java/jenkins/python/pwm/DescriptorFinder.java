@@ -19,7 +19,7 @@ public class DescriptorFinder extends AbstractTypeDeclFinder {
      * Determines if a given TypeDeclaration node extends the class Descriptor.
      */
     protected boolean isWanted(TypeDeclaration typeDecl) {
-        if (!isAbstract(typeDecl)) {
+        if (!isAbstract(typeDecl) || typeDecl.isInterface()) {
             return false;
         }
         String nodeName = typeDecl.getName().getIdentifier();
