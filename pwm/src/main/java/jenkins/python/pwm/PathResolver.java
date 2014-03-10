@@ -9,7 +9,7 @@ public class PathResolver {
     
     public static File getPath(String name) {
         String[] parts = name.split("\\.");
-        File path = WrapperMaker.getSrcDir();
+        File path = Application.getSrcDir();
         for (int i = 0; i < parts.length; i++) {
             if (parts[i].equals("")) {
                 break;

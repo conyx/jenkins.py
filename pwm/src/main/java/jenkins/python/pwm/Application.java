@@ -9,7 +9,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 /**
  * Main class of the pwm tool.
  */
-public class WrapperMaker
+public class Application
 {
     private static File sourceDir;
     

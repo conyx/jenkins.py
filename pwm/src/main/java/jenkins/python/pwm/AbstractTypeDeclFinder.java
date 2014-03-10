@@ -24,7 +24,7 @@ public abstract class AbstractTypeDeclFinder {
     private List<List<TypeDeclaration>> wantedTypes;
     
     public AbstractTypeDeclFinder() {
-        sourceCodeDir = WrapperMaker.getSrcDir();
+        sourceCodeDir = Application.getSrcDir();
     }
     
     /**
