@@ -26,9 +26,9 @@ public class Application
             List<List<TypeDeclaration>> descriptors = findAllDescriptors();
             Logger.info(new Integer(descriptors.size()) + " DESCRIPTORS FOUND");
             // create wrappers for extension points
-            makeExpointWrappers(expoints, new File("expoint"));
+            makeWrappers(expoints, new File("expoint"));
             // create wrappers for descriptors
-            makeDescrWrappers(descriptors, new File("descriptor"));
+            makeWrappers(descriptors, new File("descriptor"));
             Logger.info("WRAPPERS HAVE BEEN SUCCESSFULLY CREATED");
         }
         catch (WrapperMakerException e) {
@@ -46,7 +46,7 @@ public class Application
      * Determines if the program should continue.
      */
     private static boolean checkParams(String args[]) throws WrapperMakerException {
-        String incorrectArgs = "incorrect arguments, try java -jar pwm.jar -h for the help";
+        String incorrectArgs = "incorrect arguments, try 'java -jar pwm.jar -h' for the help";
         for (int i = 0; i < args.length; i++) {
             if (args[i].equals("-v") || args[i].equals("--verbose")) {
                 Logger.setVerbose(true);
@@ -98,11 +98,9 @@ public class Application
         return descriptors;
     }
     
-    private static void makeExpointWrappers(List<List<TypeDeclaration>> expoints, File outputDir) {
-        /// TODO create wrappers
-    }
-    
-    private static void makeDescrWrappers(List<List<TypeDeclaration>> descriptors, File outputDir) {
-        /// TODO create wrappers
+    private static void makeWrappers(List<List<TypeDeclaration>> declars, File outputDir)
+    throws WrapperMakerException {
+        WrapperMaker wm = new WrapperMaker(declars, outputDir);
+        wm.makeWrappers();
     }
 }
