@@ -109,29 +109,36 @@ public class WrapperMaker {
     }
     
     /**
+     * Determines if the node is in the list by subtreeMatch() method.
+     */
+    private boolean isIn(List<? extends ASTNode> list, ASTNode node) {
+        boolean found = false;
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).subtreeMatch(new ASTMatcher(), node)) {
+                found = true;
+                break;
+            }
+        }
+        return found;
+    }
+    
+    /**
      * Adds import declarations to the compilation unit cu.
      */
     private void addImports(CompilationUnit cu, List<TypeDeclaration> declars) {
         AST ast = cu.getAST();
         List<ImportDeclaration> imports = cu.imports();
-        // for all declarations
+        // for all original declarations
         for (int i = 0; i < declars.size(); i++) {
             TypeDeclaration decl = declars.get(i);
+            String declName = NameResolver.getFullName(decl);
             CompilationUnit oldCU = (CompilationUnit)decl.getRoot();
             List<ImportDeclaration> oldImports = oldCU.imports();
             // for all imports in the CU of the declaration
             for (int j = 0; j < oldImports.size(); j++) {
                 ImportDeclaration oldImportD = oldImports.get(j);
-                boolean found = false;
-                // ckeck if import declaration is already added
-                for (int k = 0; k < imports.size(); k++) {
-                    if (imports.get(k).subtreeMatch(new ASTMatcher(), oldImportD)) {
-                        found = true;
-                        break;
-                    }
-                }
-                // if not found, copy and add an import declaration
-                if (!found) {
+                // if not in the list, copy and add an import declaration
+                if (!isIn(imports, oldImportD)) {
                     imports.add((ImportDeclaration)ASTNode.copySubtree(ast, oldImportD));
                 }
             }
@@ -140,17 +147,31 @@ public class WrapperMaker {
             ImportDeclaration pckgImport = ast.newImportDeclaration();
             pckgImport.setName((Name)ASTNode.copySubtree(ast, pckgImportName));
             pckgImport.setOnDemand(true);
-            boolean found = false;
-            for (int j = 0; j < imports.size(); j++) {
-                if (imports.get(j).subtreeMatch(new ASTMatcher(), pckgImport)) {
-                    found = true;
-                    break;
+            if (!isIn(imports, pckgImport)) {
+                imports.add(pckgImport);
+            }
+            // import also all subtypes of the original type declarations
+            ImportDeclaration subtypesImport = ast.newImportDeclaration();
+            subtypesImport.setName(ast.newName(declName));
+            subtypesImport.setOnDemand(true);
+            if (!isIn(imports, subtypesImport)) {
+                imports.add(subtypesImport);
+            }
+            // import also all subtypes of the parent type of the original declaration
+            String[] declNameParts = declName.split("\\.");
+            String parentTypeName = "";
+            for (int j = 0; j < declNameParts.length-1; j++) {
+                parentTypeName += declNameParts[j];
+                if (j < declNameParts.length-2) {
+                    parentTypeName += ".";
                 }
             }
-            if (!found) {
-                imports.add((ImportDeclaration)ASTNode.copySubtree(ast, pckgImport));
+            ImportDeclaration parentSubtypesImport = ast.newImportDeclaration();
+            parentSubtypesImport.setName(ast.newName(parentTypeName));
+            parentSubtypesImport.setOnDemand(true);
+            if (!isIn(imports, parentSubtypesImport)) {
+                imports.add(parentSubtypesImport);
             }
-            /// TODO Parent.* names
         }
         // import also jenkins.python.* names
         Name iName;
