@@ -24,8 +24,8 @@ public class PythonExecutor {
         pinterp.set("extension", _extension);
         callId = 0;
         extension = _extension;
-        if (hasFunction("plugin_init", 0)) {
-            pinterp.exec("plugin_init()");
+        if (hasFunction("init_plugin", 0)) {
+            pinterp.exec("init_plugin()");
         }
     }
     
