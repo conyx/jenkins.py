@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.FileWriter;
 import java.util.List;
+import java.util.Map;
 
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTMatcher;
@@ -13,7 +15,16 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.PackageDeclaration;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.SimpleType;
+import org.eclipse.jdt.core.dom.ParameterizedType;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.TypeParameter;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.text.edits.TextEdit;
@@ -38,7 +49,7 @@ public class WrapperMaker {
                                             outputDir.getPath());
         }
         /// TODO declarations.size()
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < declarations.size(); i++) {
             makeWrapper(declarations.get(i));
         }
     }
@@ -79,14 +90,15 @@ public class WrapperMaker {
             // add import declarations
             addImports(cu, declars);
             // add type declaration
-            /// TODO type
+            addTypeDeclaration(cu, declars.get(0));
             // add fiels declaration
-            /// TODO field
+            addFieldsDeclarations(cu);
             // add method declarations
             /// TODO methods
             // rewrite changes to the document
-            cu.rewrite(document, null);
-            TextEdit edits = cu.rewrite(document, null);
+            Map<String,String> options = (Map<String,String>)JavaCore.getDefaultOptions();
+            options.put(DefaultCodeFormatterConstants.FORMATTER_LINE_SPLIT, "200");
+            TextEdit edits = cu.rewrite(document, options);
             edits.apply(document);
             // save the document as a new wrapper
             saveFile(document, declars.get(0));
@@ -97,6 +109,60 @@ public class WrapperMaker {
             throw new WrapperMakerException("internal error while generating wrapper " +
                                             "of the " + declName + " class");
         }
+    }
+    
+    /**
+     * Adds a type declaration to the compilation unit cu, which inherits from oldTD.
+     */
+    private void addTypeDeclaration(CompilationUnit cu, TypeDeclaration oldTD) {
+        AST ast = cu.getAST();
+        TypeDeclaration td = ast.newTypeDeclaration();
+        cu.types().add(td);
+        List<Modifier> modifiers = ast.newModifiers(Modifier.PUBLIC + Modifier.ABSTRACT);
+        for (int i = 0; i < modifiers.size(); i++) {
+            td.modifiers().add(modifiers.get(i));
+        }
+        td.setName(ast.newSimpleName(oldTD.getName().getFullyQualifiedName() + "PW"));
+        Name oldName = (Name)ASTNode.copySubtree(ast, oldTD.getName());
+        if (oldTD.typeParameters().size() == 0) {
+            td.setSuperclassType(ast.newSimpleType(oldName));
+        }
+        else {
+            Type superType = ast.newSimpleType(oldName);
+            ParameterizedType superTypeP = ast.newParameterizedType(superType);
+            td.setSuperclassType(superTypeP);
+            for (int i = 0; i < oldTD.typeParameters().size(); i++) {
+                ASTNode param = (ASTNode)oldTD.typeParameters().get(i);
+                TypeParameter tp = (TypeParameter)ASTNode.copySubtree(ast, param);
+                td.typeParameters().add(tp);
+                SimpleName argName = (SimpleName)ASTNode.copySubtree(ast, tp.getName());
+                superTypeP.typeArguments().add(ast.newSimpleType(argName));
+            }
+        }
+    }
+    
+    /**
+     * Adds field declarations to the root type declaration of the given compilation unit.
+     */
+    private void addFieldsDeclarations(CompilationUnit cu) {
+        TypeDeclaration td = (TypeDeclaration)cu.types().get(0);
+        AST ast = cu.getAST();
+        // create new decl fragment
+        VariableDeclarationFragment vdf = ast.newVariableDeclarationFragment();
+        SimpleName fieldName = ast.newSimpleName("pexec");
+        vdf.setName(fieldName);
+        // create new field
+        SimpleName fieldTypeName = ast.newSimpleName("PythonExecutor");
+        Type fieldType = ast.newSimpleType(fieldTypeName);
+        FieldDeclaration field = ast.newFieldDeclaration(vdf);
+        field.setType(fieldType);
+        List<Modifier> modifiers = ast.newModifiers(Modifier.PRIVATE + Modifier.TRANSIENT);
+        for (int i = 0; i < modifiers.size(); i++) {
+            field.modifiers().add(modifiers.get(i));
+        }
+        // add field to the root type declaration
+        td.bodyDeclarations().add(field);
+        
     }
     
     /**
