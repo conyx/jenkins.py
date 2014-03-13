@@ -21,9 +21,12 @@ public class PythonExecutor {
         String scriptPath = getScriptPath(_extension);
         pinterp = new PythonInterpreter();
         pinterp.execfile(scriptPath);
-        pinterp.set("wrapper", _extension);
+        pinterp.set("extension", _extension);
         callId = 0;
         extension = _extension;
+        if (hasFunction("plugin_init", 0)) {
+            pinterp.exec("plugin_init()");
+        }
     }
     
     /**

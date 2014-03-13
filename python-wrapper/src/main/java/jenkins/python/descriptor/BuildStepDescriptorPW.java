@@ -77,6 +77,7 @@ public abstract class BuildStepDescriptorPW<T extends BuildStep & Describable<T>
     
     // exec python methods
     public Object execPython(String function, Object ... params) {
+        initPython();
         return pexec.execPython(function, params);
     }
     //...
