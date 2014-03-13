@@ -14,8 +14,11 @@ public abstract class BuilderPW extends Builder {
     
     private transient PythonExecutor pexec;
     
+    // constructors
+    //...
+    
     // init method
-    public void initPython() {
+    private void initPython() {
         if (pexec == null) {
             pexec = new PythonExecutor(this);
             // check abstract methods implementation

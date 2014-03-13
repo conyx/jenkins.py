@@ -80,6 +80,8 @@ public class WrapperMaker {
             addImports(cu, declars);
             // add type declaration
             /// TODO type
+            // add fiels declaration
+            /// TODO field
             // add method declarations
             /// TODO methods
             // rewrite changes to the document

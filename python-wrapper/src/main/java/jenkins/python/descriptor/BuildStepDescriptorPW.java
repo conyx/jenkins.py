@@ -17,8 +17,11 @@ public abstract class BuildStepDescriptorPW<T extends BuildStep & Describable<T>
     
     private transient PythonExecutor pexec;
     
+    // constructors
+    //...
+    
     // init method
-    public void initPython() {
+    private void initPython() {
         if (pexec == null) {
             pexec = new PythonExecutor(this);
             // check abstract methods implementation
