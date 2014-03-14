@@ -53,7 +53,7 @@ public abstract class AbstractTypeDeclFinder {
             }
             else if (f.getName().endsWith(".java")) {
                 Logger.verbose("parsing file " + f.getPath());
-                searchFile(f);
+                searchInFile(f);
             }
             else {
                 Logger.verbose("file " + f.getName() + " ignored");
@@ -124,7 +124,7 @@ public abstract class AbstractTypeDeclFinder {
     /**
      * Search in the given file for the wanted type declaration.
      */
-    private void searchFile(File f) throws JavaParserException {
+    private void searchInFile(File f) throws JavaParserException {
         CompilationUnit cu = parseFile(f);
         WantedTypeVisitor visitor = new WantedTypeVisitor();
         cu.accept(visitor);
