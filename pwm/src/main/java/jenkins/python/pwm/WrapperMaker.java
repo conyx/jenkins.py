@@ -49,7 +49,7 @@ public class WrapperMaker {
                                             outputDir.getPath());
         }
         /// TODO declarations.size()
-        for (int i = 0; i < declarations.size(); i++) {
+        for (int i = 0; i < 1; i++) {
             makeWrapper(declarations.get(i));
         }
     }
@@ -76,6 +76,8 @@ public class WrapperMaker {
      * Makes a wrapper for the given type declaration (and all of its super classes).
      */
     private void makeWrapper(List<TypeDeclaration> declars) throws WrapperMakerException {
+        String declName = NameResolver.getFullName(declars.get(0));
+        Logger.verbose("creating a wrapper for the type " + declName);
         try {
             // init new blank Document, AST and CompilationUnit objecs
             Document document = new Document("\n");
@@ -94,7 +96,8 @@ public class WrapperMaker {
             // add fiels declaration
             addFieldsDeclarations(cu);
             // add method declarations
-            /// TODO methods
+            MethodMaker mm = new MethodMaker(declars, cu);
+            mm.createMethods();
             // rewrite changes to the document
             Map<String,String> options = (Map<String,String>)JavaCore.getDefaultOptions();
             options.put(DefaultCodeFormatterConstants.FORMATTER_LINE_SPLIT, "200");
@@ -105,7 +108,6 @@ public class WrapperMaker {
         }
         catch (BadLocationException e) {
             Logger.error(e.getMessage());
-            String declName = NameResolver.getFullName(declars.get(0));
             throw new WrapperMakerException("internal error while generating wrapper " +
                                             "of the " + declName + " class");
         }
