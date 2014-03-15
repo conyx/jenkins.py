@@ -20,6 +20,12 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.SuperConstructorInvocation;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.PrimitiveType;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.CastExpression;
+import org.eclipse.jdt.core.dom.Annotation;
 
 public class MethodMaker {
     List<MethodDeclaration> methods;
@@ -49,7 +55,7 @@ public class MethodMaker {
         // create constructors
         createConstructors();
         // create wrappers for abstract methods
-        createAbstractMethodWrappers();
+        createAbstrMethWrappers();
         // create wrappers for non-abstract methods
         /// TODO non-abstract
         // create *Super() methods for all non-abstract methods
@@ -60,11 +66,196 @@ public class MethodMaker {
         /// TODO initPython()
     }
     
+    private SimpleName getExecMethodName(MethodDeclaration md) {
+        Type type = md.getReturnType2();
+        String name = "execPython";
+        if (type.isPrimitiveType()) {
+            PrimitiveType ptype = (PrimitiveType)type;
+            PrimitiveType.Code ptcode = ptype.getPrimitiveTypeCode();
+            if (ptcode == PrimitiveType.BYTE) {
+                name += "Byte";
+            }
+            else if (ptcode == PrimitiveType.SHORT) {
+                name += "Short";
+            }
+            else if (ptcode == PrimitiveType.CHAR) {
+                name += "Char";
+            }
+            else if (ptcode == PrimitiveType.INT) {
+                name += "Int";
+            }
+            else if (ptcode == PrimitiveType.LONG) {
+                name += "Long";
+            }
+            else if (ptcode == PrimitiveType.FLOAT) {
+                name += "Float";
+            }
+            else if (ptcode == PrimitiveType.DOUBLE) {
+                name += "Double";
+            }
+            else if (ptcode == PrimitiveType.BOOLEAN) {
+                name += "Bool";
+            }
+            else if (ptcode == PrimitiveType.VOID) {
+                name += "Void";
+            }
+        }
+        return ast.newSimpleName(name);
+    }
+    
+    private StringLiteral getPythonFuncName(MethodDeclaration md) {
+        String methodName = md.getName().getFullyQualifiedName();
+        StringLiteral sl = ast.newStringLiteral();
+        sl.setLiteralValue(NameConvertor.javaMethToPythonFunc(methodName));
+        return sl;
+    }
+    
+    private void setExecArguments(MethodDeclaration md, MethodInvocation mi) {
+        for (int i = 0; i < md.parameters().size(); i++) {
+            SingleVariableDeclaration svd = (SingleVariableDeclaration)md.parameters().get(i);
+            Type type = svd.getType();
+            if (!type.isPrimitiveType()) {
+                // arg -> arg
+                mi.arguments().add((Name)ASTNode.copySubtree(ast, svd.getName()));
+            }
+            else {
+                // arg -> DataConvertor.from*(arg)
+                Name dataConvertor = ast.newSimpleName("DataConvertor");
+                MethodInvocation mi2 = ast.newMethodInvocation();
+                mi2.setExpression(dataConvertor);
+                PrimitiveType ptype = (PrimitiveType)type;
+                PrimitiveType.Code ptcode = ptype.getPrimitiveTypeCode();
+                String methName = "from";
+                if (ptcode == PrimitiveType.BYTE) {
+                    methName += "Byte";
+                }
+                else if (ptcode == PrimitiveType.SHORT) {
+                    methName += "Short";
+                }
+                else if (ptcode == PrimitiveType.CHAR) {
+                    methName += "Char";
+                }
+                else if (ptcode == PrimitiveType.INT) {
+                    methName += "Int";
+                }
+                else if (ptcode == PrimitiveType.LONG) {
+                    methName += "Long";
+                }
+                else if (ptcode == PrimitiveType.FLOAT) {
+                    methName += "Float";
+                }
+                else if (ptcode == PrimitiveType.DOUBLE) {
+                    methName += "Double";
+                }
+                else if (ptcode == PrimitiveType.BOOLEAN) {
+                    methName += "Bool";
+                }
+                mi2.setName(ast.newSimpleName(methName));
+                mi2.arguments().add(ASTNode.copySubtree(ast, svd.getName()));
+                mi.arguments().add(mi2);
+            }
+        }
+    }
+    
+    /**
+     * Creates a "return pexec.execPython*(params)" statement for the given method.
+     */
+    private Statement createExecStatement(MethodDeclaration md) {
+        // pexec.
+        Name pexec = ast.newSimpleName("pexec");
+        // pexec.execPython*
+        SimpleName methodName = getExecMethodName(md);
+        // pexec.execPython*("function_name"
+        StringLiteral pythonFunction = getPythonFuncName(md);
+        MethodInvocation mi = ast.newMethodInvocation();
+        mi.setExpression(pexec);
+        mi.setName(methodName);
+        mi.arguments().add(pythonFunction);
+        // pexec.execPython*("function_name", all, arguments)
+        setExecArguments(md, mi);
+        Type type = md.getReturnType2();
+        if (type.isPrimitiveType()) {
+            PrimitiveType.Code ptcode = ((PrimitiveType)type).getPrimitiveTypeCode();
+            if (ptcode == PrimitiveType.VOID) {
+                // pexec.execPythonVoid("function_name", all, arguments)
+                return ast.newExpressionStatement(mi);
+            }
+            else {
+                // return pexec.execPython*("function_name", all, arguments)
+                ReturnStatement rs = ast.newReturnStatement();
+                rs.setExpression(mi);
+                return rs;
+            }
+        }
+        else {
+            // return (Type)pexec.execPython*("function_name", all, arguments)
+            CastExpression ce = ast.newCastExpression();
+            ce.setType((Type)ASTNode.copySubtree(ast, type));
+            ce.setExpression(mi);
+            ReturnStatement rs = ast.newReturnStatement();
+            rs.setExpression(ce);
+            return rs;
+        }
+    }
+    
+    /**
+     * Adds "@Override" annotation to the method declaration.
+     */
+    private void addOverride(MethodDeclaration md) {
+        boolean found = false;
+        for (int i = 0; i < md.modifiers().size(); i++) {
+            if (((IExtendedModifier)md.modifiers().get(i)).isAnnotation()) {
+                Annotation ann = (Annotation)md.modifiers().get(i);
+                if (ann.getTypeName().getFullyQualifiedName().equals("Override")) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+        if (!found) {
+            Annotation ann = ast.newMarkerAnnotation();
+            ann.setTypeName(ast.newSimpleName("Override"));
+            md.modifiers().add(ann);
+        }
+    }
+    
+    private void deleteAbstract(MethodDeclaration md) {
+        Modifier abstr = null;
+        for (int i = 0; i < md.modifiers().size(); i++) {
+            if (((IExtendedModifier)md.modifiers().get(i)).isModifier()) {
+                Modifier mod = (Modifier)md.modifiers().get(i);
+                if (mod.isAbstract()) {
+                    abstr = mod;
+                    break;
+                }
+            }
+        }
+        if (abstr != null) {
+            abstr.delete();
+        }
+    }
+    
     /**
      * Creates wrappers for abstract methods.
      */
-    private void createAbstractMethodWrappers() {
-        /// TODO abstract
+    private void createAbstrMethWrappers() {
+        for (int i = 0; i < abstractMethods.size(); i++) {
+            MethodDeclaration md = (MethodDeclaration)ASTNode.copySubtree(ast, abstractMethods.get(i));
+            // set public modifier
+            setPublic(md);
+            // add to the TD body declarations
+            td.bodyDeclarations().add(md);
+            // add @Override annotation
+            addOverride(md);
+            // delete abstract modifier
+            deleteAbstract(md);
+            // add initPython() call
+            MethodInvocation mi = ast.newMethodInvocation();
+            mi.setName(ast.newSimpleName("initPython"));
+            md.getBody().statements().add(ast.newExpressionStatement(mi));
+            // add pexec.execPython() call
+            md.getBody().statements().add(createExecStatement(md));
+        }
     }
     
     /**
@@ -89,9 +280,7 @@ public class MethodMaker {
             }
             md.getBody().statements().add(superCall);
         }
-            
     }
-        
     
     /**
      * Finds and saves all methods in original type declarations.
@@ -111,12 +300,12 @@ public class MethodMaker {
                     newMD.setJavadoc(null);
                     // add the method to the list if it is not already in
                     if (!isIn(newMD, methods)) {
-                        methods.add(md);
-                        if (isAbstract(md)) {
-                            abstractMethods.add(md);
+                        methods.add(newMD);
+                        if (isAbstract(newMD)) {
+                            abstractMethods.add(newMD);
                         }
                         else {
-                            nonabstractMethods.add(md);
+                            nonabstractMethods.add(newMD);
                         }
                     }
                 }
