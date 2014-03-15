@@ -58,8 +58,8 @@ public class MethodMaker {
         createAbstrMethWrappers();
         // create wrappers for non-abstract methods
         /// TODO non-abstract
-        // create *Super() methods for all non-abstract methods
-        /// TODO *Super()
+        // create super*() methods for all non-abstract methods
+        /// TODO super*()
         // create execPython*() methods
         /// TODO execPython
         // create initPython() method
