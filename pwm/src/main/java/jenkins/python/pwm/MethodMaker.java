@@ -10,14 +10,22 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.Modifier.ModifierKeyword;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.IExtendedModifier;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.SuperMethodInvocation;
+import org.eclipse.jdt.core.dom.SuperConstructorInvocation;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
 
 public class MethodMaker {
     List<MethodDeclaration> methods;
     List<MethodDeclaration> nonabstractMethods;
     List<MethodDeclaration> abstractMethods;
+    List<MethodDeclaration> constructors;
     TypeDeclaration td;
     AST ast;
     List<TypeDeclaration> oldDeclars;
@@ -26,6 +34,7 @@ public class MethodMaker {
         methods = new ArrayList<MethodDeclaration>();
         nonabstractMethods = new ArrayList<MethodDeclaration>();
         abstractMethods = new ArrayList<MethodDeclaration>();
+        constructors = new ArrayList<MethodDeclaration>();
         td = (TypeDeclaration)cu.types().get(0);
         ast = td.getAST();
         oldDeclars = anOldDeclars;
@@ -38,9 +47,9 @@ public class MethodMaker {
         // find all methods in original type declarations
         findAllMethods();
         // create constructors
-        /// TODO constructors
+        createConstructors();
         // create wrappers for abstract methods
-        /// TODO abstract
+        createAbstractMethodWrappers();
         // create wrappers for non-abstract methods
         /// TODO non-abstract
         // create *Super() methods for all non-abstract methods
@@ -52,18 +61,49 @@ public class MethodMaker {
     }
     
     /**
+     * Creates wrappers for abstract methods.
+     */
+    private void createAbstractMethodWrappers() {
+        /// TODO abstract
+    }
+    
+    /**
+     * Creates constructors which just call super constructors.
+     */
+    private void createConstructors() {
+        for (int i = 0; i < constructors.size(); i++) {
+            MethodDeclaration md = (MethodDeclaration)ASTNode.copySubtree(ast, constructors.get(i));
+            // set name
+            SimpleName name =  (SimpleName)ASTNode.copySubtree(ast, td.getName());
+            md.setName(name);
+            // set public modifier
+            setPublic(md);
+            // add to the TD body declarations
+            td.bodyDeclarations().add(md);
+            // call a parent constructor
+            SuperConstructorInvocation superCall = ast.newSuperConstructorInvocation();
+            for (int j = 0; j < md.parameters().size(); j++) {
+                SingleVariableDeclaration argument = (SingleVariableDeclaration)md.parameters().get(j);
+                Name argName = (Name)ASTNode.copySubtree(ast, argument.getName());
+                superCall.arguments().add(argName);
+            }
+            md.getBody().statements().add(superCall);
+        }
+            
+    }
+        
+    
+    /**
      * Finds and saves all methods in original type declarations.
      */
     private void findAllMethods() {
         // for all original type declarations
         for (int i = 0; i < oldDeclars.size(); i++) {
             TypeDeclaration oldTD = oldDeclars.get(i);
-            SimpleName tdName = oldTD.getName();
             for (int j = 0; j < oldTD.getMethods().length; j++) {
                 MethodDeclaration md = oldTD.getMethods()[j];
-                SimpleName mName = md.getName();
-                // want public or protected, not a constructor and not static
-                if (!areEqual(tdName, mName) && !isStatic(md) && (isPublic(md) || isProtected(md))) {
+                // want public or protected method, not a constructor and not static
+                if (!md.isConstructor() && !isStatic(md) && (isPublic(md) || isProtected(md))) {
                     MethodDeclaration newMD = (MethodDeclaration)ASTNode.copySubtree(ast, md);
                     // erase statements
                     newMD.setBody(ast.newBlock());
@@ -80,15 +120,78 @@ public class MethodMaker {
                         }
                     }
                 }
+                // want public or protected constructor
+                else if (i == 0 && md.isConstructor() && (isPublic(md) || isProtected(md))) {
+                    MethodDeclaration newMD = (MethodDeclaration)ASTNode.copySubtree(ast, md);
+                    // erase statements
+                    newMD.setBody(ast.newBlock());
+                    // erase Javadoc
+                    newMD.setJavadoc(null);
+                    // add the constructor to the list
+                    constructors.add(newMD);
+                }
             }
         }
         /// TODO verbose
         Logger.info("methods found: " + new Integer(methods.size()));
         Logger.info("abstract: " + new Integer(abstractMethods.size()));
+        Logger.info("constructors: " + new Integer(constructors.size()));
+    }
+    
+    /**
+     * Sets the public modifier and deletes the protected one.
+     */
+    private void setPublic(MethodDeclaration md) {
+        // if already public, do nothing
+        if (isPublic(md)) {
+            return;
+        }
+        // set public
+        Modifier modifier = ast.newModifier(ModifierKeyword.fromFlagValue(Modifier.PUBLIC));
+        md.modifiers().add(0, modifier);
+        // delete protected
+        for (int i = 0; i < md.modifiers().size(); i++) {
+            if (((IExtendedModifier)md.modifiers().get(i)).isModifier()) {
+                Modifier m = (Modifier)md.modifiers().get(i);
+                if (m.isProtected()) {
+                    m.delete();
+                    break;
+                }
+            }
+        }
+    }
+    
+    /**
+     * Deletes all annotations in the given method declaration.
+     */
+    private void deleteAnnotations(MethodDeclaration md) {
+        /// TODO delete annotations
     }
     
     private boolean isIn(MethodDeclaration md, List<MethodDeclaration> list) {
-        /// TODO isIn
+        for (int i = 0; i < list.size(); i++) {
+            MethodDeclaration md2 = list.get(i);
+            if (!md.getName().subtreeMatch(new ASTMatcher(), md2.getName())) {
+                continue;
+            }
+            List<SingleVariableDeclaration> varDeclars = md.parameters();
+            List<SingleVariableDeclaration> varDeclars2 = md2.parameters();
+            if (varDeclars.size() != varDeclars2.size()) {
+                continue;
+            }
+            boolean identical = true;
+            for (int j = 0; j < varDeclars.size(); j++) {
+                Type type = varDeclars.get(j).getType();
+                Type type2 = varDeclars2.get(j).getType();
+                if (!type.subtreeMatch(new ASTMatcher(), type2)) {
+                    identical = false;
+                    break;
+                }
+            }
+            if (identical) {
+                return true;
+            }
+        }
         return false;
     }
     

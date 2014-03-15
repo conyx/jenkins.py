@@ -47,7 +47,7 @@ public abstract class BuilderPW extends Builder {
     // ...
     
     // super methods
-    public boolean performSuper(AbstractBuild build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+    public boolean superPerform(AbstractBuild build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         return super.perform(build, launcher, listener);
     }
     //...

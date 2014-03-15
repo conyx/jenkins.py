@@ -101,6 +101,7 @@ public class WrapperMaker {
             // rewrite changes to the document
             Map<String,String> options = (Map<String,String>)JavaCore.getDefaultOptions();
             options.put(DefaultCodeFormatterConstants.FORMATTER_LINE_SPLIT, "200");
+            options.put(DefaultCodeFormatterConstants.FORMATTER_BLANK_LINES_BEFORE_METHOD, "1");
             TextEdit edits = cu.rewrite(document, options);
             edits.apply(document);
             // save the document as a new wrapper

@@ -59,7 +59,7 @@ public abstract class BuildStepDescriptorPW<T extends BuildStep & Describable<T>
     //...
     
     // super methods
-    public boolean configureSuper(StaplerRequest req, JSONObject formData) throws FormException {
+    public boolean superConfirure(StaplerRequest req, JSONObject formData) throws FormException {
         return super.configure(req, formData);
     }
     //...
