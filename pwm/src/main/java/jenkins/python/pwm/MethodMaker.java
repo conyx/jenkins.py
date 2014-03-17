@@ -33,6 +33,14 @@ import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.IfStatement;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.ArrayCreation;
+import org.eclipse.jdt.core.dom.ArrayAccess;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.TypeLiteral;
 
 public class MethodMaker {
     List<MethodDeclaration> methods;
@@ -70,7 +78,7 @@ public class MethodMaker {
         // create execPython*() methods
         createExecPythonMeths();
         // create initPython() method
-        /// TODO initPython()
+        createInitPython();
     }
     
     private SimpleName getExecMethodName(MethodDeclaration md) {
@@ -210,6 +218,20 @@ public class MethodMaker {
         }
     }
     
+    private boolean isDeprecated(MethodDeclaration md) {
+        boolean found = false;
+        for (int i = 0; i < md.modifiers().size(); i++) {
+            if (((IExtendedModifier)md.modifiers().get(i)).isAnnotation()) {
+                Annotation ann = (Annotation)md.modifiers().get(i);
+                if (ann.getTypeName().getFullyQualifiedName().equals("Deprecated")) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+        return found;
+    }
+    
     /**
      * Adds "@Override" annotation to the method declaration.
      */
@@ -227,7 +249,7 @@ public class MethodMaker {
         if (!found) {
             Annotation ann = ast.newMarkerAnnotation();
             ann.setTypeName(ast.newSimpleName("Override"));
-            md.modifiers().add(ann);
+            md.modifiers().add(0, ann);
         }
     }
     
@@ -287,6 +309,222 @@ public class MethodMaker {
     }
     
     /**
+     * Creates statements for the checking abstract methods implementation.
+     */
+    private void createCheckAbstract(Block b) {
+        // add String[] jMethods = new String[size] statement
+        VariableDeclarationFragment vdf1 = ast.newVariableDeclarationFragment();
+        VariableDeclarationStatement vds1 = ast.newVariableDeclarationStatement(vdf1);
+        vds1.setType(ast.newArrayType(ast.newSimpleType(ast.newSimpleName("String")), 1));
+        vdf1.setName(ast.newSimpleName("jMethods"));
+        ArrayCreation ac1 = ast.newArrayCreation();
+        vdf1.setInitializer(ac1);
+        ac1.setType(ast.newArrayType(ast.newSimpleType(ast.newSimpleName("String")), 1));
+        ac1.dimensions().add(ast.newNumberLiteral(new Integer(abstractMethods.size()).toString()));
+        b.statements().add(vds1);
+        // add jMethods[i] = "methodName" statements
+        for (int i = 0; i < abstractMethods.size(); i++) {
+            ArrayAccess aa = ast.newArrayAccess();
+            aa.setArray(ast.newSimpleName("jMethods"));
+            aa.setIndex(ast.newNumberLiteral(new Integer(i).toString()));
+            StringLiteral sl = ast.newStringLiteral();
+            sl.setLiteralValue(abstractMethods.get(i).getName().getFullyQualifiedName());
+            Assignment assignment = ast.newAssignment();
+            assignment.setLeftHandSide(aa);
+            assignment.setOperator(Assignment.Operator.ASSIGN);
+            assignment.setRightHandSide(sl);
+            b.statements().add(ast.newExpressionStatement(assignment));
+        }
+        // add String[] pFuncs = new String[size] statement
+        VariableDeclarationFragment vdf2 = ast.newVariableDeclarationFragment();
+        VariableDeclarationStatement vds2 = ast.newVariableDeclarationStatement(vdf2);
+        vds2.setType(ast.newArrayType(ast.newSimpleType(ast.newSimpleName("String")), 1));
+        vdf2.setName(ast.newSimpleName("pFuncs"));
+        ArrayCreation ac2 = ast.newArrayCreation();
+        vdf2.setInitializer(ac2);
+        ac2.setType(ast.newArrayType(ast.newSimpleType(ast.newSimpleName("String")), 1));
+        ac2.dimensions().add(ast.newNumberLiteral(new Integer(abstractMethods.size()).toString()));
+        b.statements().add(vds2);
+        // add pFuncs[i] = "function_name" statements
+        for (int i = 0; i < abstractMethods.size(); i++) {
+            ArrayAccess aa = ast.newArrayAccess();
+            aa.setArray(ast.newSimpleName("pFuncs"));
+            aa.setIndex(ast.newNumberLiteral(new Integer(i).toString()));
+            StringLiteral sl = ast.newStringLiteral();
+            String methodName = abstractMethods.get(i).getName().getFullyQualifiedName();
+            sl.setLiteralValue(NameConvertor.javaMethToPythonFunc(methodName));
+            Assignment assignment = ast.newAssignment();
+            assignment.setLeftHandSide(aa);
+            assignment.setOperator(Assignment.Operator.ASSIGN);
+            assignment.setRightHandSide(sl);
+            b.statements().add(ast.newExpressionStatement(assignment));
+        }
+        // add Class<?>[][] argTypes = new Class<?>[size][] statement
+        VariableDeclarationFragment vdf3 = ast.newVariableDeclarationFragment();
+        VariableDeclarationStatement vds3 = ast.newVariableDeclarationStatement(vdf3);
+        vds3.setType(ast.newArrayType(ast.newSimpleType(ast.newSimpleName("Class")), 2));
+        vdf3.setName(ast.newSimpleName("argTypes"));
+        ArrayCreation ac3 = ast.newArrayCreation();
+        vdf3.setInitializer(ac3);
+        ac3.setType(ast.newArrayType(ast.newSimpleType(ast.newSimpleName("Class")), 2));
+        ac3.dimensions().add(ast.newNumberLiteral(new Integer(abstractMethods.size()).toString()));
+        b.statements().add(vds3);
+        // add argTypes[i] = new Class[size] statements
+        for (int i = 0; i < abstractMethods.size(); i++) {
+            ArrayAccess aa = ast.newArrayAccess();
+            aa.setArray(ast.newSimpleName("argTypes"));
+            aa.setIndex(ast.newNumberLiteral(new Integer(i).toString()));
+            Assignment assignment = ast.newAssignment();
+            assignment.setLeftHandSide(aa);
+            assignment.setOperator(Assignment.Operator.ASSIGN);
+            ArrayCreation ac = ast.newArrayCreation();
+            ac.setType(ast.newArrayType(ast.newSimpleType(ast.newSimpleName("Class")), 1));
+            int argc = abstractMethods.get(i).parameters().size();
+            ac.dimensions().add(ast.newNumberLiteral(new Integer(argc).toString()));
+            assignment.setRightHandSide(ac);
+            b.statements().add(ast.newExpressionStatement(assignment));
+            // add argTypes[i][j] = ArgumentType.class statements
+            for (int j = 0; j < abstractMethods.get(i).parameters().size(); j++) {
+                SingleVariableDeclaration svd;
+                svd = (SingleVariableDeclaration)abstractMethods.get(i).parameters().get(j);
+                Type type = svd.getType();
+                if (type.isParameterizedType()) {
+                    type = ((ParameterizedType)type).getType();
+                }
+                ArrayAccess aa2 = ast.newArrayAccess();
+                aa2.setArray(ast.newSimpleName("argTypes"));
+                aa2.setIndex(ast.newNumberLiteral(new Integer(i).toString()));
+                ArrayAccess aa3 = ast.newArrayAccess();
+                aa3.setArray(aa2);
+                aa3.setIndex(ast.newNumberLiteral(new Integer(j).toString()));
+                Assignment assignment2 = ast.newAssignment();
+                assignment2.setLeftHandSide(aa3);
+                assignment2.setOperator(Assignment.Operator.ASSIGN);
+                TypeLiteral tl = ast.newTypeLiteral();
+                tl.setType((Type)ASTNode.copySubtree(ast, type));
+                assignment2.setRightHandSide(tl);
+                b.statements().add(ast.newExpressionStatement(assignment2));
+            }
+        }
+        MethodInvocation mi = ast.newMethodInvocation();
+        // pexec.
+        Name pexec = ast.newSimpleName("pexec");
+        mi.setExpression(pexec);
+        // pexec.checkAbstrMethods
+        SimpleName methodName = ast.newSimpleName("checkAbstrMethods");
+        mi.setName(methodName);
+        // pexec.checkAbstrMethods(jMethods, pFuncs, argTypes);
+        Name name1 = ast.newSimpleName("jMethods");
+        mi.arguments().add(name1);
+        Name name2 = ast.newSimpleName("pFuncs");
+        mi.arguments().add(name2);
+        Name name3 = ast.newSimpleName("argTypes");
+        mi.arguments().add(name3);
+        b.statements().add(ast.newExpressionStatement(mi));
+    }
+    
+    /**
+     * Creates statements for the registration python functions.
+     */
+    private void createRegisterFunc(Block b) {
+        // add String[] functions = new String[size] statement
+        VariableDeclarationFragment vdf1 = ast.newVariableDeclarationFragment();
+        VariableDeclarationStatement vds1 = ast.newVariableDeclarationStatement(vdf1);
+        vds1.setType(ast.newArrayType(ast.newSimpleType(ast.newSimpleName("String")), 1));
+        vdf1.setName(ast.newSimpleName("functions"));
+        ArrayCreation ac1 = ast.newArrayCreation();
+        vdf1.setInitializer(ac1);
+        ac1.setType(ast.newArrayType(ast.newSimpleType(ast.newSimpleName("String")), 1));
+        ac1.dimensions().add(ast.newNumberLiteral(new Integer(nonabstractMethods.size()).toString()));
+        b.statements().add(vds1);
+        // add functions[i] = "function_name" statements
+        for (int i = 0; i < nonabstractMethods.size(); i++) {
+            ArrayAccess aa = ast.newArrayAccess();
+            aa.setArray(ast.newSimpleName("functions"));
+            aa.setIndex(ast.newNumberLiteral(new Integer(i).toString()));
+            StringLiteral sl = ast.newStringLiteral();
+            String methodName = nonabstractMethods.get(i).getName().getFullyQualifiedName();
+            sl.setLiteralValue(NameConvertor.javaMethToPythonFunc(methodName));
+            Assignment assignment = ast.newAssignment();
+            assignment.setLeftHandSide(aa);
+            assignment.setOperator(Assignment.Operator.ASSIGN);
+            assignment.setRightHandSide(sl);
+            b.statements().add(ast.newExpressionStatement(assignment));
+        }
+        // add int[] argsCount = new int[size] statement
+        VariableDeclarationFragment vdf2 = ast.newVariableDeclarationFragment();
+        VariableDeclarationStatement vds2 = ast.newVariableDeclarationStatement(vdf2);
+        vds2.setType(ast.newArrayType(ast.newPrimitiveType(PrimitiveType.INT), 1));
+        vdf2.setName(ast.newSimpleName("argsCount"));
+        ArrayCreation ac2 = ast.newArrayCreation();
+        vdf2.setInitializer(ac2);
+        ac2.setType(ast.newArrayType(ast.newPrimitiveType(PrimitiveType.INT), 1));
+        ac2.dimensions().add(ast.newNumberLiteral(new Integer(nonabstractMethods.size()).toString()));
+        b.statements().add(vds2);
+        // add argsCount[i] = argc statements
+        for (int i = 0; i < nonabstractMethods.size(); i++) {
+            ArrayAccess aa = ast.newArrayAccess();
+            aa.setArray(ast.newSimpleName("argsCount"));
+            aa.setIndex(ast.newNumberLiteral(new Integer(i).toString()));
+            Assignment assignment = ast.newAssignment();
+            assignment.setLeftHandSide(aa);
+            assignment.setOperator(Assignment.Operator.ASSIGN);
+            int argc = nonabstractMethods.get(i).parameters().size();
+            assignment.setRightHandSide(ast.newNumberLiteral(new Integer(argc).toString()));
+            b.statements().add(ast.newExpressionStatement(assignment));
+        }
+        MethodInvocation mi = ast.newMethodInvocation();
+        // pexec.
+        Name pexec = ast.newSimpleName("pexec");
+        mi.setExpression(pexec);
+        // pexec.registerFunctions
+        SimpleName methodName = ast.newSimpleName("registerFunctions");
+        mi.setName(methodName);
+        // pexec.registerFunctions(functions, argsCount);
+        Name name1 = ast.newSimpleName("functions");
+        mi.arguments().add(name1);
+        Name name2 = ast.newSimpleName("argsCount");
+        mi.arguments().add(name2);
+        b.statements().add(ast.newExpressionStatement(mi));
+    }
+    
+    /**
+     * Creates initPython() method.
+     */
+    private void createInitPython() {
+        // create a new method
+        MethodDeclaration md = ast.newMethodDeclaration();
+        md.setName(ast.newSimpleName("initPython"));
+        // add to the TD body declarations
+        td.bodyDeclarations().add(1, md);
+        // set private modifier
+        setPrivate(md);
+        // create block with IF statement
+        md.setBody(ast.newBlock());
+        IfStatement ifSt = ast.newIfStatement();
+        Block ifBlock = ast.newBlock();
+        ifSt.setThenStatement(ifBlock);
+        md.getBody().statements().add(ifSt);
+        // create pexec == null expression
+        InfixExpression infix = ast.newInfixExpression();
+        infix.setLeftOperand(ast.newSimpleName("pexec"));
+        infix.setOperator(InfixExpression.Operator.EQUALS);
+        infix.setRightOperand(ast.newNullLiteral());
+        ifSt.setExpression(infix);
+        // create pexec = new PythonExecutor(this) statement
+        Assignment assignment = ast.newAssignment();
+        assignment.setLeftHandSide(ast.newSimpleName("pexec"));
+        assignment.setOperator(Assignment.Operator.ASSIGN);
+        ClassInstanceCreation cic = ast.newClassInstanceCreation();
+        cic.setType(ast.newSimpleType(ast.newSimpleName("PythonExecutor")));
+        cic.arguments().add(ast.newThisExpression());
+        assignment.setRightHandSide(cic);
+        ifBlock.statements().add(ast.newExpressionStatement(assignment));
+        createCheckAbstract(ifBlock);
+        createRegisterFunc(ifBlock);
+    }
+    
+    /**
      * Creates execPython*() methods, which call pexec.execPython*() methods.
      */
     private void createExecPythonMeths() {
@@ -307,7 +545,7 @@ public class MethodMaker {
                   "{initPython(); return pexec.execPythonFloat(function, params);}" +
                   "public double execPythonDouble(String function, Object ... params)" +
                   "{initPython(); return pexec.execPythonDouble(function, params);}" +
-                  "public bool execPythonBool(String function, Object ... params)" +
+                  "public boolean execPythonBool(String function, Object ... params)" +
                   "{initPython(); return pexec.execPythonBool(function, params);}" +
                   "public void execPythonVoid(String function, Object ... params)" +
                   "{initPython(); pexec.execPythonVoid(function, params);}";
@@ -436,7 +674,7 @@ public class MethodMaker {
                 MethodDeclaration md = oldTD.getMethods()[j];
                 // want public or protected method, not a constructor, not static and not final
                 if (!md.isConstructor() && !isStatic(md) && (isPublic(md) || isProtected(md)) &&
-                    !isFinal(md)) {
+                    !isFinal(md) && !isDeprecated(md)) {
                     MethodDeclaration newMD = (MethodDeclaration)ASTNode.copySubtree(ast, md);
                     // erase statements
                     newMD.setBody(ast.newBlock());
@@ -465,10 +703,14 @@ public class MethodMaker {
                 }
             }
         }
-        /// TODO verbose
-        Logger.info("methods found: " + new Integer(methods.size()));
-        Logger.info("abstract: " + new Integer(abstractMethods.size()));
-        Logger.info("constructors: " + new Integer(constructors.size()));
+        Logger.verbose("methods found: " + new Integer(methods.size()));
+        Logger.verbose("abstract: " + new Integer(abstractMethods.size()));
+        Logger.verbose("constructors: " + new Integer(constructors.size()));
+    }
+    
+    private void setPrivate(MethodDeclaration md) {
+        Modifier modifier = ast.newModifier(ModifierKeyword.fromFlagValue(Modifier.PRIVATE));
+        md.modifiers().add(modifier);
     }
     
     /**
@@ -524,7 +766,13 @@ public class MethodMaker {
             boolean identical = true;
             for (int j = 0; j < varDeclars.size(); j++) {
                 Type type = varDeclars.get(j).getType();
+                if (type.isParameterizedType()) {
+                    type = ((ParameterizedType)type).getType();
+                }
                 Type type2 = varDeclars2.get(j).getType();
+                if (type2.isParameterizedType()) {
+                    type2 = ((ParameterizedType)type2).getType();
+                }
                 if (!type.subtreeMatch(new ASTMatcher(), type2)) {
                     identical = false;
                     break;
