@@ -359,7 +359,7 @@ public class MethodMaker {
             assignment.setRightHandSide(sl);
             b.statements().add(ast.newExpressionStatement(assignment));
         }
-        // add Class<?>[][] argTypes = new Class<?>[size][] statement
+        // add Class[][] argTypes = new Class[size][] statement
         VariableDeclarationFragment vdf3 = ast.newVariableDeclarationFragment();
         VariableDeclarationStatement vds3 = ast.newVariableDeclarationStatement(vdf3);
         vds3.setType(ast.newArrayType(ast.newSimpleType(ast.newSimpleName("Class")), 2));
