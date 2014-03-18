@@ -16,10 +16,11 @@ public class DescriptorFinder extends AbstractTypeDeclFinder {
     }
     
     /**
-     * Determines if a given TypeDeclaration node extends the class Descriptor.
+     * Determines if a given TypeDeclaration node extends Descriptor class.
      */
     protected boolean isWanted(TypeDeclaration typeDecl) {
         if (NameResolver.getFullName(typeDecl).equals("hudson.model.Descriptor")) {
+            Logger.info("descriptor Descriptor found");
             return true;
         }
         if (!isAbstract(typeDecl) || typeDecl.isInterface()) {
