@@ -10,13 +10,10 @@ import org.eclipse.jdt.core.dom.Name;
 
 public class ExtensionPointFinder extends AbstractTypeDeclFinder {
     
-    public ExtensionPointFinder() {
-        super();
-    }
-    
     /**
      * Determines if a given TypeDeclaration node implements the interface ExtensionPoint.
      */
+    @Override
     protected boolean isWanted(TypeDeclaration typeDecl) {
         if (typeDecl.isInterface()) {
             return false;

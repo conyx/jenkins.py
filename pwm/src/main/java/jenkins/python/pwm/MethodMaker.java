@@ -41,6 +41,7 @@ import org.eclipse.jdt.core.dom.ArrayAccess;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.SimpleType;
 
 public class MethodMaker {
     List<MethodDeclaration> methods;
@@ -403,6 +404,12 @@ public class MethodMaker {
                 TypeLiteral tl = ast.newTypeLiteral();
                 tl.setType((Type)ASTNode.copySubtree(ast, type));
                 assignment2.setRightHandSide(tl);
+                // workaround for the type argument T
+                if (type.isSimpleType()) {
+                    if (((SimpleType)type).getName().getFullyQualifiedName().equals("T")) {
+                        assignment2.setRightHandSide(ast.newNullLiteral());
+                    }
+                }
                 b.statements().add(ast.newExpressionStatement(assignment2));
             }
         }

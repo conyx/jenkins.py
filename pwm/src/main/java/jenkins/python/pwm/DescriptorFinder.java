@@ -11,13 +11,10 @@ import org.eclipse.jdt.core.dom.Name;
 
 public class DescriptorFinder extends AbstractTypeDeclFinder {
     
-    public DescriptorFinder() {
-        super();
-    }
-    
     /**
      * Determines if a given TypeDeclaration node extends Descriptor class.
      */
+    @Override
     protected boolean isWanted(TypeDeclaration typeDecl) {
         if (NameResolver.getFullName(typeDecl).equals("hudson.model.Descriptor")) {
             Logger.info("descriptor Descriptor found");

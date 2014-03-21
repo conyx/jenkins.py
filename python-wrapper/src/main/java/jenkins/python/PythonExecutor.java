@@ -77,7 +77,10 @@ public class PythonExecutor {
                             break;
                         }
                         for (int k = 0; k < paramTypes.length; k++) {
-                            if (paramTypes[k] != argTypes[i][k]) {
+                            if (argTypes[i][k] == null) {
+                                // this is for parametric types, do nothing
+                            }
+                            else if (paramTypes[k] != argTypes[i][k]) {
                                 break;
                             }
                             if (k == paramTypes.length - 1) {

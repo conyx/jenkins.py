@@ -17,6 +17,12 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.SimpleType;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.TypeParameter;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.SimpleName;
 
 public abstract class AbstractTypeDeclFinder {
     
@@ -136,6 +142,8 @@ public abstract class AbstractTypeDeclFinder {
             list.add(visitor.getTypeDecl());
             searchForParents(list);
             Logger.verbose("number of parent classes: " + new Integer(list.size()-1));
+            // pass on parametric types
+            passOnTypes(list);
             // add the list (of the type declaration and its parents) to the wanted types list
             wantedTypes.add(list);
         }
@@ -151,10 +159,102 @@ public abstract class AbstractTypeDeclFinder {
     }
     
     /**
+     * Replaces a name of the parametric type in the superclass.
+     */
+    protected void passOnTypes(List<TypeDeclaration> list) {
+        // this list has no superclasses
+        if (list.size() < 2) {
+            return;
+        }
+        Type superType = list.get(0).getSuperclassType();
+        if (!superType.isParameterizedType()) {
+            return;
+        }
+        ParameterizedType superT = (ParameterizedType)superType;
+        TypeDeclaration parentTD = list.get(1);
+        for (int i = 0; i < superT.typeArguments().size(); i++) {
+            // get a new type
+            Type newType = (Type)superT.typeArguments().get(i);
+            // get an old type
+            SimpleName oldTypeName = ((TypeParameter)parentTD.typeParameters().get(i)).getName();
+            String oldType = oldTypeName.getFullyQualifiedName();
+            // replace the old type with a new type
+            ReplaceTypeVisitor visitor = new ReplaceTypeVisitor(newType, oldType);
+            parentTD.accept(visitor);
+        }
+    }
+    
+    /**
      * Determines if a type declaration is wanted by a concrete finder.
      */
     protected abstract boolean isWanted(TypeDeclaration typeDecl);
     
+    /**
+     * Searches for old type occurrences and replaces them with a new type.
+     */
+    private class ReplaceTypeVisitor extends ASTVisitor {
+        private Type newType;
+        private String oldType;
+        
+        ReplaceTypeVisitor(Type aNewType, String anOldType) {
+            newType = aNewType;
+            oldType = anOldType;
+        }
+        
+        private Type replaceType(SimpleType type) {
+            AST ast = type.getAST();
+            if (type.getName().getFullyQualifiedName().equals(oldType)) {
+                return (Type)ASTNode.copySubtree(ast, newType);
+            }
+            else {
+                return (Type)ASTNode.copySubtree(ast, type);
+            }
+        }
+        
+        private Type replaceType(ParameterizedType type) {
+            AST ast = type.getAST();
+            Type basicType = type.getType();
+            if (basicType.isSimpleType()) {
+                type.setType(replaceType((SimpleType)basicType));
+            }
+            else if (basicType.isParameterizedType()) {
+                type.setType(replaceType((ParameterizedType)basicType));
+            }
+            for (int i = 0; i < type.typeArguments().size(); i++) {
+                Type paramType = (Type)type.typeArguments().get(i);
+                if (paramType.isSimpleType()) {
+                    type.typeArguments().set(i, replaceType((SimpleType)paramType));
+                }
+                else if (paramType.isParameterizedType()) {
+                    type.typeArguments().set(i, replaceType((ParameterizedType)paramType));
+                }
+            }
+            return (Type)ASTNode.copySubtree(ast, type);
+        }
+        
+        public boolean visit(MethodDeclaration node) {
+            Type returnType = node.getReturnType2();
+            if (returnType != null) {
+                if (returnType.isSimpleType()) {
+                    node.setReturnType2(replaceType((SimpleType)returnType));
+                }
+                else if (returnType.isParameterizedType()) {
+                    node.setReturnType2(replaceType((ParameterizedType)returnType));
+                }
+            }
+            for (int i = 0; i < node.parameters().size(); i++) {
+                SingleVariableDeclaration svd = (SingleVariableDeclaration)node.parameters().get(i);
+                Type varType = svd.getType();
+                if (varType.isSimpleType()) {
+                    svd.setType(replaceType((SimpleType)varType));
+                }
+                else if (varType.isParameterizedType()) {
+                    svd.setType(replaceType((ParameterizedType)varType));
+                }
+            }
+            return false;
+        }
+    }
     
     /**
      * Visits all TypeDeclaration nodes and checks if they are wanted.
