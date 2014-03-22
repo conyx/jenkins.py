@@ -12,6 +12,7 @@
   <description>Provides the runtime library for plugins written in Python.</description>
   <version>1.0</version>
   <packaging>hpi</packaging>
+  <url>http://wiki.jenkins-ci.org/display/JENKINS/Python+Wrapper+Plugin</url>
 
   <licenses>
     <license>
