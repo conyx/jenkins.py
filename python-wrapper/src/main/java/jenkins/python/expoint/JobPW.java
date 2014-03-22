@@ -1372,18 +1372,6 @@ public abstract class JobPW<JobT extends Job<JobT, RunT>, RunT extends Run<JobT,
 	}
 
 	@Override
-	@CLIMethod(name = "delete-job")
-	@RequirePOST
-	public void doDoDelete(StaplerRequest req, StaplerResponse rsp) throws IOException, ServletException, InterruptedException {
-		initPython();
-		if (pexec.isImplemented(94)) {
-			pexec.execPythonVoid("do_do_delete", req, rsp);
-		} else {
-			super.doDoDelete(req, rsp);
-		}
-	}
-
-	@Override
 	public void delete(StaplerRequest req, StaplerResponse rsp) throws IOException, ServletException {
 		initPython();
 		if (pexec.isImplemented(95)) {

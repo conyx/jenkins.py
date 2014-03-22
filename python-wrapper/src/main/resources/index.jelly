@@ -2,5 +2,5 @@
   This view is used to render the installed plugins page.
 -->
 <div>
-  This plugin provides runtime library for plugins written in Python.
+  This plugin provides the runtime library for plugins written in Python.
 </div>
