@@ -10,7 +10,7 @@
   <artifactId>python-wrapper</artifactId>
   <name>Python Wrapper Plugin</name>
   <description>Provides the runtime library for plugins written in Python.</description>
-  <version>1.0</version>
+  <version>1.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <url>http://wiki.jenkins-ci.org/display/JENKINS/Python+Wrapper+Plugin</url>
 
@@ -52,5 +52,12 @@
       </resource>
     </resources>
   </build>
+  
+  <developers>
+    <developer>
+      <id>bambas</id>
+      <name>Tomáš Bambas</name>
+    </developer>
+  </developers>
 
 </project>
