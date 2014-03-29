@@ -56,5 +56,18 @@
     <developerConnection>scm:git:https://github.com/jenkinsci/jenkins.py.git</developerConnection>
     <url>https://github.com/jenkinsci/jenkins.py</url>
   </scm>
+  
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.jenkins-ci.tools</groupId>
+        <artifactId>maven-hpi-plugin</artifactId>
+        <version>1.96</version>
+        <configuration>
+          <maskClasses>com.kenai.jffi.</maskClasses>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>
