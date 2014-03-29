@@ -120,6 +120,11 @@ public class PythonExecutor {
                     // great, it accepts correct number of arguments
                     return true;
                 }
+                boolean varargs = ((PyTableCode)fnc.func_code).varargs;
+                if (aCount < argsCount && varargs) {
+                    // great, it is variable arguments function
+                    return true;
+                }
             }
         }
         return false;
