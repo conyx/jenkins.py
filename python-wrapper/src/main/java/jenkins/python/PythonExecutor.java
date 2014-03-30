@@ -17,13 +17,17 @@ public class PythonExecutor {
     private boolean[] funcFlags;
     private Object extension;
     
-    public PythonExecutor(Object _extension) throws PythonWrapperError {
-        String scriptPath = getScriptPath(_extension);
+    public PythonExecutor(Object extension) throws PythonWrapperError {
+        String scriptPath = getScriptPath(extension);
         pinterp = new PythonInterpreter();
+        pinterp.exec("import sys");
+        String modulePath = new File(scriptPath).getParent().replace("\\", "\\\\");
+        String cmdPath = "sys.path.append('" + modulePath + "')";
+        pinterp.exec(cmdPath);
         pinterp.execfile(scriptPath);
-        pinterp.set("extension", _extension);
+        pinterp.set("extension", extension);
         callId = 0;
-        extension = _extension;
+        this.extension = extension;
         if (hasFunction("init_plugin", 0)) {
             pinterp.exec("init_plugin()");
         }
