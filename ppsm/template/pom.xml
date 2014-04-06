@@ -1,0 +1,76 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.jenkins-ci.plugins</groupId>
+    <artifactId>plugin</artifactId>
+    <version>1.509.4</version>
+  </parent>
+
+  <groupId>org.jenkins-ci.plugins</groupId>
+  <artifactId>__artifactid__</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>hpi</packaging>
+  <name>__name__</name>
+  <description>!!!Here insert some description of the plugin.!!!</description>
+  <url>http://wiki.jenkins-ci.org/display/JENKINS/__wiki__</url>
+
+  <licenses>
+    <license>
+      <name>The MIT license</name>
+      <url>http://www.opensource.org/licenses/mit-license.php</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <repositories>
+    <repository>
+      <id>repo.jenkins-ci.org</id>
+      <url>http://repo.jenkins-ci.org/public/</url>
+    </repository>
+  </repositories>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>repo.jenkins-ci.org</id>
+      <url>http://repo.jenkins-ci.org/public/</url>
+    </pluginRepository>
+  </pluginRepositories>
+
+  <dependencies>
+    <dependency>
+    <groupId>org.jenkins-ci.plugins</groupId>
+    <artifactId>python-wrapper</artifactId>
+    <version>1.0.2</version>
+  </dependency>
+  </dependencies>
+  
+  <build>
+  <resources>
+    <resource>
+      <directory>src/main</directory>
+      <includes>
+        <include>**/*.py</include>
+      </includes>
+    </resource>
+    <resource>
+      <directory>src/main/resources</directory>
+      <filtering>false</filtering>
+    </resource>
+  </resources>
+  </build>
+  
+  <developers>
+    <developer>
+      <id>!!!your_jenkinsci_id!!!</id>
+      <name>!!!Your Name!!!</name>
+    </developer>
+  </developers>
+  
+  <scm>
+    <connection>scm:git:https://github.com/jenkinsci/__git__.git</connection>
+    <developerConnection>scm:git:https://github.com/jenkinsci/__git__.git</developerConnection>
+    <url>https://github.com/jenkinsci/__git__</url>
+  </scm>
+  
+</project>
