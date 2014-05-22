@@ -32,7 +32,7 @@ public class JARUnpacker
         // unpack "python" directory
         JarFile jar;
         try {
-            jar = new JarFile(jarFile);
+            jar = new JarFile(jarFile, false, JarFile.OPEN_READ);
         }
         catch (IOException e) {
             throw new PythonWrapperError("Cannot open JAR file: " + e.getMessage());

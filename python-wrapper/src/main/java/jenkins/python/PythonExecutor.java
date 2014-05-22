@@ -21,7 +21,9 @@ public class PythonExecutor {
         String scriptPath = getScriptPath(extension);
         pinterp = new PythonInterpreter();
         pinterp.exec("import sys");
-        String modulePath = new File(scriptPath).getParent().replace("\\", "\\\\");
+        String modulePath = new File(scriptPath).getParent();
+        modulePath = modulePath.replace("\\", "\\\\");
+        modulePath = modulePath.replace("'", "\\'");
         String cmdPath = "sys.path.append('" + modulePath + "')";
         pinterp.exec(cmdPath);
         pinterp.execfile(scriptPath);
@@ -31,6 +33,16 @@ public class PythonExecutor {
         if (hasFunction("init_plugin", 0)) {
             pinterp.exec("init_plugin()");
         }
+    }
+    
+    private synchronized int getCallId() {
+        int actCallId = callId;
+        // increase call id for the next use
+        callId++;
+        if (callId < 0) {
+            callId = 0;
+        }
+        return actCallId;
     }
     
     /**
@@ -111,7 +123,7 @@ public class PythonExecutor {
      * Determines if there is a function with the given name and the correct number of arguments
      * in the loaded script.
      */
-    private boolean hasFunction(String name, int argsCount) {
+    public boolean hasFunction(String name, int argsCount) {
         PyStringMap locals = (PyStringMap)pinterp.getLocals();
         if (locals.has_key(name)) {
             // great, there is some variable with this name
@@ -140,8 +152,10 @@ public class PythonExecutor {
     private String getScriptPath(Object obj) throws PythonWrapperError {
         String className = obj.getClass().getName();
         File scriptFile;
-        File classFolder = new File(obj.getClass().getProtectionDomain()
-                                       .getCodeSource().getLocation().getPath());
+        String classFolderPath = obj.getClass().getProtectionDomain()
+                                    .getCodeSource().getLocation().getPath();
+        classFolderPath = classFolderPath.replace("%20", " ");
+        File classFolder = new File(classFolderPath);
         if (classFolder.getPath().endsWith(".jar")) {
             // normal mode (plugin was properly installed)
             JARUnpacker.unpackPythonFiles(classFolder);
@@ -159,11 +173,12 @@ public class PythonExecutor {
      * Call the function inside Jython interpreter and return PyObject
      */
     private PyObject execPythonGeneric(String function, Object ... params) {
+        int myCallId = getCallId();
         // prepare function call string
         String paramName;
         String execStr = function + "(";
         for (int i = 0; i < params.length; i++) {
-            paramName = "_" + function + "_" + (new Integer(callId)).toString() + "_" + (new Integer(i)).toString();
+            paramName = "_" + function + "_" + (new Integer(myCallId)).toString() + "_" + (new Integer(i)).toString();
             pinterp.set(paramName, params[i]);
             execStr += paramName;
             if (i < params.length-1) {
@@ -175,13 +190,8 @@ public class PythonExecutor {
         PyObject obj = pinterp.eval(execStr);
         // delete params from Jython interpreter namespace
         for (int i = 0; i < params.length; i++) {
-            paramName = "_" + function + "_" + (new Integer(callId)).toString() + "_" + (new Integer(i)).toString();
+            paramName = "_" + function + "_" + (new Integer(myCallId)).toString() + "_" + (new Integer(i)).toString();
             pinterp.exec("del " + paramName);
-        }
-        // increase call id for the next use
-        callId++;
-        if (callId < 0) {
-            callId = 0;
         }
         return obj;
     }
